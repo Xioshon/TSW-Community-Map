@@ -83,7 +83,7 @@
 
   // ---------- settings (gear panel) ----------
   // Android (and others without a permission step) get the tilt straight away; iPhone asks first.
-  const DEFAULTS = { gyro: device.gyroOK && !device.needsPermission, motion: "full", trains: true, walk: true, quality: "auto" };
+  const DEFAULTS = { gyro: device.gyroOK && !device.needsPermission, motion: "full", trains: true, walk: true, quality: "auto", autoplay: true };
   const settings = { ...DEFAULTS, ...store.get("tsw-settings", {}) };
   const settingHooks = [];
   const calm = () => reduceMotion || settings.motion === "less";
@@ -118,6 +118,72 @@
     if (!soundOn) return;
     try { const c = ac(); if (c.state === "suspended") c.resume(); SOUNDS[kind](c.currentTime + .01); } catch { /* no audio */ }
   }
+
+  // ---------- place ambience ----------
+  // Each place has a ~10 s seamless loop. Opening a card plays a soft 3 s taste of it; the card's
+  // 「一直聽」 button loops it until pressed again. Web Audio (not <audio loop>) so the loop has no
+  // gap on iPhone. Files load only when a card needs them, then stay cached.
+  const ambience = (() => {
+    const cache = new Map();
+    let src = null, gain = null, mode = null, token = 0, timer = 0;
+    const listeners = [];
+    const changed = () => listeners.forEach((fn) => fn(mode));
+    // AAC files start/end with a few ms of encoder padding; skip it so the loop joins cleanly
+    function edges(buf) {
+      const d = buf.getChannelData(0), n = d.length, lim = Math.min(n >> 2, Math.round(buf.sampleRate * .12));
+      let a = 0, b = n - 1;
+      while (a < lim && Math.abs(d[a]) < 1e-4) a++;
+      while (n - 1 - b < lim && Math.abs(d[b]) < 1e-4) b--;
+      return [a / buf.sampleRate, (b + 1) / buf.sampleRate];
+    }
+    function load(url) {
+      if (!cache.has(url)) {
+        const pr = fetch(url).then((r) => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+          .then((b) => new Promise((res, rej) => ac().decodeAudioData(b, res, rej)));
+        pr.catch(() => cache.delete(url)); // let a later tap try again
+        cache.set(url, pr);
+      }
+      return cache.get(url);
+    }
+    const prefetch = (p) => { if (p && p.sound) load(p.sound).catch(() => {}); };
+    function stop(fade = .45) {
+      token++; clearTimeout(timer);
+      if (src) {
+        const c = ac(), t = c.currentTime, s = src;
+        gain.gain.cancelScheduledValues(t); gain.gain.setValueAtTime(gain.gain.value, t); gain.gain.linearRampToValueAtTime(0, t + fade);
+        setTimeout(() => { try { s.stop(); } catch { /* already stopped */ } }, fade * 1000 + 60);
+      }
+      src = gain = null;
+      if (mode) { mode = null; changed(); }
+    }
+    // mode "taste": fade in, ~2.6 s, fade out.  mode "loop": keeps going until stop().
+    async function start(p, m) {
+      if (m === "loop" && src && mode === "taste") { // already playing: just stop the fade-out
+        clearTimeout(timer); const t = ac().currentTime;
+        gain.gain.cancelScheduledValues(t); gain.gain.setValueAtTime(gain.gain.value, t); gain.gain.linearRampToValueAtTime(.9, t + .5);
+        mode = "loop"; changed(); return;
+      }
+      stop(.35);
+      if (!p || !p.sound || !soundOn) return;
+      const my = token, t0 = performance.now();
+      if (m === "loop") { mode = "loading"; changed(); }
+      let buf;
+      try { buf = await load(p.sound); } catch { if (my === token) { mode = null; changed(); toast("聲音載入唔到，等陣再試吓"); } return; }
+      if (my !== token || !soundOn) return;
+      if (m === "taste" && performance.now() - t0 > 1500) return; // too late to feel like part of opening
+      const c = ac(); if (c.state === "suspended") c.resume();
+      const [a, b] = edges(buf);
+      src = c.createBufferSource(); src.buffer = buf; src.loop = true; src.loopStart = a; src.loopEnd = b;
+      gain = c.createGain(); src.connect(gain).connect(c.destination);
+      const t = c.currentTime, v = m === "loop" ? .9 : .6;
+      gain.gain.setValueAtTime(0, t); gain.gain.linearRampToValueAtTime(v, t + (m === "loop" ? .5 : .7));
+      src.start(t, a);
+      mode = m; changed();
+      if (m === "taste") timer = setTimeout(() => { if (my === token) stop(1.1); }, 2600);
+    }
+    document.addEventListener("visibilitychange", () => { if (document.hidden) stop(.1); });
+    return { start, stop, prefetch, on: (fn) => listeners.push(fn), get mode() { return mode; } };
+  })();
 
   // ---------- base map ----------
   // A small whole-map picture underneath (never blank), plus sharp pre-rendered tiles for just the
@@ -561,7 +627,7 @@
   setNight(store.get("tsw-night", false), false);
 
   const soundBtn = $("sound");
-  function setSound(on) { soundOn = on; soundBtn.innerHTML = icon(on ? "sound" : "mute"); soundBtn.setAttribute("aria-pressed", on); store.set("tsw-sound", on); }
+  function setSound(on) { soundOn = on; soundBtn.innerHTML = icon(on ? "sound" : "mute"); soundBtn.setAttribute("aria-pressed", on); store.set("tsw-sound", on); if (!on) ambience.stop(.2); }
   soundBtn.onclick = () => { setSound(!soundOn); play("soft"); };
   setSound(soundOn);
 
@@ -645,10 +711,32 @@
     $("card-stars").textContent = "★".repeat(p.stars || 0) + "☆".repeat(5 - (p.stars || 0));
     $("card-tags").replaceChildren(...(p.tags || []).map((t) => Object.assign(document.createElement("li"), { textContent: t })));
     $("card-text").textContent = p.text || "";
+    soundBtn2(p);
     const i = real.indexOf(p);
     $("card-prev").disabled = i <= 0;
     $("card-next").disabled = i >= real.length - 1;
   }
+  // the card's sound button: 「一直聽」 loops the place's ambience, 「停止」 ends it
+  const sndBtn = $("card-sound");
+  function soundBtn2(p) {
+    const has = !!(p && p.sound), m = ambience.mode;
+    sndBtn.disabled = !has;
+    sndBtn.classList.toggle("playing", has && (m === "loop" || m === "loading"));
+    sndBtn.innerHTML = !has ? icon("speaker") + " 聲效製作中"
+      : m === "loop" ? '<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span> 停止'
+      : m === "loading" ? icon("speaker") + " 載入中…" : icon("speaker") + " 一直聽";
+    sndBtn.setAttribute("aria-pressed", has && m === "loop");
+  }
+  ambience.on(() => soundBtn2(current));
+  sndBtn.onclick = () => {
+    if (!current || !current.sound) return;
+    if (ambience.mode === "loop" || ambience.mode === "loading") { ambience.stop(); return; }
+    if (!soundOn) setSound(true);
+    // the user asked to listen, so play even with the iPhone's silent switch on (Safari 16.4+)
+    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch { /* older iOS */ }
+    ambience.start(current, "loop");
+  };
+  const neighbours = (p) => { const i = real.indexOf(p); [real[i - 1], real[i + 1]].forEach(ambience.prefetch); };
   function stampIfNew(p) {
     const first = !visited.has(p.id);
     stamp.classList.remove("slam");
@@ -776,6 +864,8 @@
     current = p;
     const m = markerEls.get(p.id), lift = m.querySelector(".lift");
     play("pop");
+    if (settings.autoplay) ambience.start(p, "taste"); else ambience.prefetch(p);
+    neighbours(p);
     m.classList.add("active");
     fill(p);
     if (reduceMotion) {
@@ -802,6 +892,7 @@
   async function closeCard() {
     if (busy || layer.hidden) return;
     busy = true;
+    ambience.stop(.4);
     const p = current, m = markerEls.get(p.id), lift = m.querySelector(".lift");
     if (!reduceMotion) {
       const to = fromMarker(p), pk = paper(true);
@@ -826,6 +917,9 @@
     current = p;
     markerEls.get(p.id).classList.add("peeled", "active");
     play("soft");
+    const keep = ambience.mode === "loop" || ambience.mode === "loading";
+    if (keep) ambience.start(p, "loop"); else if (settings.autoplay) ambience.start(p, "taste"); else ambience.stop();
+    neighbours(p);
     if (reduceMotion) { fill(p); stampIfNew(p); return; }
     card.animate([{ transform: rest }, { transform: `translateX(${-dir * 40}px) rotate(${-dir * 4}deg)`, opacity: 0 }],
       { duration: 160, easing: "ease-in" }).finished.then(() => {

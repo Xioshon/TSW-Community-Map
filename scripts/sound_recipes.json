@@ -1,0 +1,336 @@
+{
+ "_note": "Paths are relative to art/sounds. beds loop under everything; events are one-shots at the given seconds (wrapping round the loop). Run scripts/mix_sounds.py after editing.",
+ "dragon-park": {
+  "beds": [
+   {
+    "file": "raw/commons/Water bubbles chortling.ogg",
+    "start": 5,
+    "gain": 1.0,
+    "hp": 120
+   },
+   {
+    "file": "raw/commons/Grasshoppers.ogg",
+    "start": 1,
+    "gain": 0.35,
+    "hp": 1500
+   }
+  ],
+  "events": [
+   {
+    "file": "raw/commons/Ducks landing in water.ogg",
+    "start": 1.0,
+    "dur": 1.6,
+    "gain": 0.25,
+    "at": [
+     3.4
+    ]
+   },
+   {
+    "file": "synth/wind_chime.wav",
+    "gain": 0.12,
+    "at": [
+     7.6
+    ]
+   }
+  ]
+ },
+ "tsw-park": {
+  "beds": [
+   {
+    "file": "raw/commons/Douzen kids on playground.ogg",
+    "start": 8,
+    "gain": 1.0,
+    "hp": 150
+   },
+   {
+    "file": "raw/commons/Birds chirping in a garden.ogg",
+    "start": 20,
+    "gain": 0.55,
+    "hp": 900
+   }
+  ]
+ },
+ "two-dish-rice": {
+  "beds": [
+   {
+    "file": "raw/commons/High school cafeteria.ogg",
+    "start": 10,
+    "gain": 1.0,
+    "hp": 120
+   }
+  ],
+  "events": [
+   {
+    "file": "raw/commons/Cutlery on table.ogg",
+    "start": 0.2,
+    "dur": 2.2,
+    "gain": 0.35,
+    "at": [
+     2.1
+    ]
+   },
+   {
+    "file": "raw/commons/Wood and cutlery.ogg",
+    "gain": 0.25,
+    "at": [
+     6.3
+    ]
+   }
+  ]
+ },
+ "smelly-river": {
+  "beds": [
+   {
+    "file": "raw/commons/Shallow small river with stony riverbed.ogg",
+    "start": 2,
+    "gain": 0.75,
+    "hp": 200
+   },
+   {
+    "file": "raw/commons/Grasshoppers.ogg",
+    "start": 4,
+    "gain": 0.5,
+    "hp": 1500
+   }
+  ],
+  "events": [
+   {
+    "file": "raw/commons/Bicycle-bell-1.wav",
+    "gain": 0.3,
+    "at": [
+     6.8
+    ]
+   }
+  ]
+ },
+ "wetland": {
+  "beds": [
+   {
+    "file": "raw/commons/Breeze birds and geese.ogg",
+    "start": 12,
+    "gain": 1.0,
+    "hp": 150
+   },
+   {
+    "file": "raw/commons/Edible frogs, sounds. May. The Village of Krzemienica, Łódź Voivodeship, Poland.ogg",
+    "start": 3,
+    "gain": 0.5,
+    "hp": 200
+   }
+  ]
+ },
+ "tsui-sing-lau": {
+  "beds": [
+   {
+    "file": "raw/commons/Gentle breeze and birds singing.ogg",
+    "start": 4,
+    "gain": 1.0,
+    "hp": 120
+   }
+  ],
+  "events": [
+   {
+    "file": "synth/temple_bell.wav",
+    "dur": 6,
+    "gain": 0.22,
+    "at": [
+     1.0
+    ]
+   }
+  ]
+ },
+ "tin-sau-bazaar": {
+  "beds": [
+   {
+    "file": "raw/commons/Shopping mall less crowded.ogg",
+    "start": 5,
+    "gain": 1.0,
+    "hp": 150
+   },
+   {
+    "file": "raw/commons/High school cafeteria.ogg",
+    "start": 40,
+    "gain": 0.45,
+    "hp": 200
+   }
+  ],
+  "events": []
+ },
+ "dim-sum-cart": {
+  "beds": [
+   {
+    "file": "raw/commons/Restaurant ambience.ogg",
+    "start": 15,
+    "gain": 1.0,
+    "hp": 120
+   },
+   {
+    "file": "raw/oga/crowd_shouting_0.ogg",
+    "start": 12,
+    "gain": 0.6,
+    "hp": 200
+   }
+  ],
+  "events": [
+   {
+    "file": "raw/commons/Wood and cutlery.ogg",
+    "gain": 0.3,
+    "at": [
+     1.6
+    ]
+   },
+   {
+    "file": "raw/commons/Cutlery on table.ogg",
+    "start": 0.5,
+    "dur": 1.8,
+    "gain": 0.3,
+    "at": [
+     7.4
+    ]
+   },
+   {
+    "file": "synth/trolley.wav",
+    "gain": 0.32,
+    "at": [
+     3.8
+    ]
+   }
+  ]
+ },
+ "dog-park": {
+  "beds": [
+   {
+    "file": "raw/commons/Gentle breeze and birds singing.ogg",
+    "start": 14,
+    "gain": 0.6,
+    "hp": 150
+   }
+  ],
+  "events": [
+   {
+    "file": "raw/oga/dog_barking_mono.wav",
+    "gain": 0.5,
+    "at": [
+     0.8
+    ]
+   },
+   {
+    "file": "raw/oga/cat_softmew.wav",
+    "gain": 0.4,
+    "at": [
+     3.6
+    ]
+   },
+   {
+    "file": "raw/oga/kitten_mew-1_0.ogg",
+    "gain": 0.3,
+    "at": [
+     8.6
+    ]
+   },
+   {
+    "file": "raw/oga/dog_barking_mono.wav",
+    "start": 0,
+    "dur": 1.0,
+    "gain": 0.3,
+    "at": [
+     6.0
+    ]
+   }
+  ]
+ },
+ "cycling-hub": {
+  "beds": [
+   {
+    "file": "raw/commons/Breeze birds and geese.ogg",
+    "start": 30,
+    "gain": 0.7,
+    "hp": 150
+   }
+  ],
+  "events": [
+   {
+    "file": "raw/commons/Bicycle-bell-1.wav",
+    "gain": 0.4,
+    "at": [
+     1.2
+    ]
+   },
+   {
+    "file": "synth/freewheel.wav",
+    "gain": 0.25,
+    "at": [
+     3.0
+    ]
+   },
+   {
+    "file": "raw/commons/Bsumusictech bike-bell.wav",
+    "gain": 0.3,
+    "at": [
+     7.8
+    ]
+   }
+  ]
+ },
+ "archery": {
+  "beds": [
+   {
+    "file": "raw/commons/Gentle breeze and birds singing.ogg",
+    "start": 20,
+    "gain": 0.7,
+    "hp": 150
+   }
+  ],
+  "events": [
+   {
+    "file": "synth/bow_shot.wav",
+    "gain": 0.55,
+    "at": [
+     1.5,
+     6.5
+    ]
+   }
+  ]
+ },
+ "yeung-hau-temple": {
+  "beds": [
+   {
+    "file": "raw/commons/20090610 0 ambience.ogg",
+    "start": 20,
+    "gain": 0.7,
+    "hp": 120
+   }
+  ],
+  "events": [
+   {
+    "file": "synth/woodfish.wav",
+    "gain": 0.4,
+    "at": [
+     0.6,
+     1.3,
+     2.0,
+     2.7,
+     3.4,
+     4.1,
+     4.8,
+     5.5
+    ]
+   },
+   {
+    "file": "synth/temple_bell.wav",
+    "dur": 4.5,
+    "gain": 0.25,
+    "at": [
+     6.4
+    ]
+   },
+   {
+    "file": "synth/wind_chime.wav",
+    "gain": 0.12,
+    "at": [
+     9.1
+    ]
+   }
+  ]
+ }
+}

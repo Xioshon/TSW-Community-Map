@@ -29,7 +29,7 @@
       ],
       "stars": 5,
       "text": "一行入月洞門，成個世界即刻靜晒。錦鯉喺燈籠下面游嚟游去，池邊仲有隻白天鵝雕像；記得望吓石柱上面嗰條盤住嘅龍。（示範文字，待組員補充）",
-      "sound": null
+      "sound": "sounds/dragon-park.m4a"
     },
     {
       "id": "tsw-park",
@@ -44,7 +44,7 @@
       ],
       "stars": 4,
       "text": "夜晚嘅公園一啲都唔靜：細路喺度盪韆鞦，大榕樹下面嘅紅色涼亭坐滿街坊。公園入面有二十幾棵八重櫻，每年大約二月開到成片粉紅色。（示範文字，待組員補充）",
-      "sound": null
+      "sound": "sounds/tsw-park.m4a"
     },
     {
       "id": "two-dish-rice",
@@ -59,7 +59,7 @@
       ],
       "stars": 4,
       "text": "夜晚八點，舖頭門口已經排咗一條人龍，大多數係收工嘅叔叔伯伯。燈箱寫住「兩餸飯 28 元」，原條倉魚 30 蚊，白飯唔收錢——係街坊最實際嘅一餐。（示範文字，待組員補充）",
-      "sound": null
+      "sound": "sounds/two-dish-rice.m4a"
     },
     {
       "id": "smelly-river",
@@ -74,7 +74,7 @@
       ],
       "stars": 3,
       "text": "大家都叫佢「臭河」，正名係天水圍明渠，大約 2.7 公里長，分隔天水圍同流浮山嗰邊。夜晚沿住河邊行其實幾舒服：有拖住手散步嘅公公婆婆、放學傾偈嘅學生，河邊仲有單車徑。（示範文字，待組員補充）",
-      "sound": null
+      "sound": "sounds/smelly-river.m4a"
     },
     {
       "id": "wetland",
@@ -89,7 +89,7 @@
       ],
       "stars": 5,
       "text": "天水圍北面嘅濕地公園，住咗香港最出名嘅鱷魚「貝貝」。木棧道、觀鳥屋、招潮蟹，慢慢行可以行成個下晝。（示範文字，待組員補充）",
-      "sound": null
+      "sound": "sounds/wetland.m4a"
     },
     {
       "id": "tsui-sing-lau",
@@ -103,7 +103,7 @@
       ],
       "stars": 4,
       "text": "出咗天水圍站行幾步就到，係香港唯一現存嘅古塔，屬於屏山文物徑嘅一部分。（示範文字，待組員補充）",
-      "sound": null
+      "sound": "sounds/tsui-sing-lau.m4a"
     },
     {
       "id": "tin-sau-bazaar",
@@ -118,7 +118,7 @@
       "stars": 4,
       "text": "東華三院用社企方式營運嘅墟市，有成百個小檔，好多檔主都係區內街坊，賣衫、雜貨、小食都有。（示範文字，待組員補充；營業時間以東華三院公佈為準）",
       "sticker": "stickers/simple/tin_sau_bazaar.webp",
-      "sound": null
+      "sound": "sounds/tin-sau-bazaar.m4a"
     },
     {
       "id": "dim-sum-cart",
@@ -133,7 +133,7 @@
       "stars": 4,
       "text": "全港買少見少嘅推車仔點心，天水圍就有一間！每朝六點半開始推車仔巡場，賣晒即止，點心全部人手整。（示範文字，待組員補充；以店舖最新安排為準）",
       "sticker": "stickers/simple/dim_sum_cart.webp",
-      "sound": null
+      "sound": "sounds/dim-sum-cart.m4a"
     },
     {
       "id": "dog-park",
@@ -147,7 +147,7 @@
       "stars": 3,
       "text": "康文署嘅天業路休憩處寵物公園，有八百幾平方米，設寵物沖身處同狗廁所，24 小時開放，係區內少數可以畀狗狗放電嘅地方。（示範文字，待組員補充）",
       "sticker": "stickers/simple/dog_park.webp",
-      "sound": null
+      "sound": "sounds/dog-park.m4a"
     },
     {
       "id": "cycling-hub",
@@ -161,7 +161,7 @@
       "stars": 3,
       "text": "天水圍地勢平坦，單車徑四通八達。呢度係新界單車徑網絡嘅出入站之一，可以由天水圍一路踩去元朗甚至屯門。（示範文字，待組員補充）",
       "sticker": "stickers/simple/cycling_hub.webp",
-      "sound": null
+      "sound": "sounds/cycling-hub.m4a"
     },
     {
       "id": "archery",
@@ -175,7 +175,7 @@
       "stars": 3,
       "text": "估唔到吧？天水圍東邊有個射箭場，係香港射箭總會嘅場地，平日畀已註冊嘅射手練習，間中仲會舉行比賽。（示範文字，待組員補充）",
       "sticker": "stickers/simple/archery.webp",
-      "sound": null
+      "sound": "sounds/archery.m4a"
     },
     {
       "id": "yeung-hau-temple",
@@ -189,7 +189,7 @@
       "stars": 3,
       "text": "天水圍起樓之前，呢一帶係魚塘、稻田同村落。新市鎮高樓旁邊，仲保留住呢間鄉村古廟，一新一舊就隔住條河。（示範文字，待組員補充）",
       "sticker": "stickers/simple/yeung_hau_temple.webp",
-      "sound": null
+      "sound": "sounds/yeung-hau-temple.m4a"
     }
   ]
 }
