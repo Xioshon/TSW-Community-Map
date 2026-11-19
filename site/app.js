@@ -1,9 +1,54 @@
 // 夜遊「圍」園 — map viewer: camera (drag, inertia, smooth zoom), stickers, trains, night mode, stamps, story cards.
 (async function () {
+  // ---------- loading screen: hopping stickers + a progress bar until data, stickers and first tiles are in ----------
+  const loader = (() => {
+    const el = document.getElementById("loader"), fill = document.getElementById("loader-fill"), text = document.getElementById("loader-text");
+    let total = 0, done = 0, finished = false;
+    const all = [];
+    const show = () => {
+      const p = total ? done / total : 0;
+      if (fill) fill.style.width = (6 + 94 * p).toFixed(1) + "%";
+      if (text) text.textContent = `攤開地圖中… ${Math.round(p * 100)}%`;
+    };
+    return {
+      track(p) {
+        if (finished) return p;
+        total++; show();
+        all.push(Promise.resolve(p).catch(() => {}).finally(() => { done++; show(); }));
+        return p;
+      },
+      // wait for everything tracked so far (and anything added meanwhile), at most `limit` ms
+      async finish(limit = 12000) {
+        const deadline = new Promise((r) => setTimeout(r, limit));
+        for (let n = -1; n !== all.length;) { n = all.length; await Promise.race([Promise.allSettled(all), deadline]); }
+        if (finished) return;
+        finished = true;
+        if (fill) fill.style.width = "100%";
+        setTimeout(() => {
+          document.body.classList.remove("loading");
+          if (el) { el.classList.add("done"); setTimeout(() => el.remove(), 700); }
+        }, 200);
+      },
+      get active() { return !finished; },
+    };
+  })();
+  // resolves when an <img> has loaded (or failed); one automatic retry for flaky mobile connections
+  const imgReady = (img) => new Promise((res) => {
+    if (img.complete && img.naturalWidth) return res();
+    img.addEventListener("load", () => res(), { once: true });
+    img.addEventListener("error", function retry() {
+      if (img.dataset.retried) return res();
+      img.dataset.retried = "1";
+      setTimeout(() => { img.src = img.src.split("?")[0] + "?r=" + Date.now(); }, 700);
+      img.addEventListener("error", () => res(), { once: true });
+    }, { once: true });
+  });
+  const getJSON = (u, fallback) => loader.track(fetch(u).then((r) => r.json()).catch(() => fallback));
+
   const [{ map, places, categories }, lines, walkData] = await Promise.all([
-    fetch("data/places.json").then((r) => r.json()),
-    fetch("data/lines.json").then((r) => r.json()).catch(() => ({ loop: [], stations: [] })),
-    fetch("data/walk.json").then((r) => r.json()).catch(() => null),
+    getJSON("data/places.json"),
+    getJSON("data/lines.json", { loop: [], stations: [] }),
+    getJSON("data/walk.json", null),
   ]);
   const $ = (id) => document.getElementById(id);
   const viewport = $("viewport"), stage = $("stage"), markers = $("markers");
@@ -45,7 +90,12 @@
   }
 
   // ---------- base map ----------
-  $("map").append(Object.assign(new Image(map.width, map.height), { src: map.image, alt: "", decoding: "async", draggable: false }));
+  // A small whole-map picture underneath (never blank), plus sharp pre-rendered tiles for just the
+  // visible area on top. Phones never have to rasterise the vector map while you pan or zoom.
+  const mapEl = $("map"), tileLayer = Object.assign(document.createElement("div"), { className: "tiles" });
+  const baseImg = Object.assign(new Image(), { src: "img/map_base.webp", className: "map-base", alt: "", draggable: false });
+  loader.track(imgReady(baseImg));
+  mapEl.append(baseImg, tileLayer);
   stage.style.width = map.width + "px"; stage.style.height = map.height + "px";
   const project = (lat, lon) => [(lon - map.west) * map.kx * map.scale, (map.north - lat) * map.scale];
 
@@ -74,7 +124,11 @@
     const lift = Object.assign(document.createElement("span"), { className: "lift" });
     btn.append(lift);
     if (p.placeholder) lift.textContent = "?";
-    else lift.append(Object.assign(document.createElement("img"), { className: "sticker", src: p.sticker, alt: "", draggable: false }));
+    else {
+      const img = Object.assign(document.createElement("img"), { className: "sticker", src: p.sticker, alt: "", draggable: false });
+      loader.track(imgReady(img).then(() => img.decode && img.decode().catch(() => {})));
+      lift.append(img);
+    }
     btn.addEventListener("click", () => openCard(p));
     btn.addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse") play("tick"); });
     m.append(Object.assign(document.createElement("span"), { className: "pin" }), btn,
@@ -135,9 +189,49 @@
     markers.classList.toggle("close", z >= 1.5);
     stage.classList.add("moving"); // cached layer while moving; redrawn sharp once still
     clearTimeout(settleTimer);
-    settleTimer = setTimeout(() => stage.classList.remove("moving"), 180);
+    settleTimer = setTimeout(() => { stage.classList.remove("moving"); updateTiles(); }, 180);
+    queueTiles();
     if (mouse) queueNear();
   }
+  const TILE = 512, BLEED = 1, LEVELS = [1, 2, 3], tiles = new Map();
+  let tileTimer = 0;
+  function updateTiles() {
+    tileTimer = 0;
+    const [vw, vh] = vwh(), need = z * Math.min(window.devicePixelRatio || 1, 3);
+    const level = need <= .55 ? 0 : LEVELS.find((l) => l >= need * .85) || LEVELS[LEVELS.length - 1];
+    const want = new Set();
+    if (level) {
+      const pad = 200, cols = Math.ceil((map.width * level) / TILE), rows = Math.ceil((map.height * level) / TILE);
+      const x0 = Math.max(0, Math.floor(((-tx / z - pad) * level) / TILE)), x1 = Math.min(cols - 1, Math.floor((((vw - tx) / z + pad) * level) / TILE));
+      const y0 = Math.max(0, Math.floor(((-ty / z - pad) * level) / TILE)), y1 = Math.min(rows - 1, Math.floor((((vh - ty) / z + pad) * level) / TILE));
+      for (let r = y0; r <= y1; r++) for (let c = x0; c <= x1; c++) {
+        const key = `${level}/${c}_${r}`;
+        want.add(key);
+        if (tiles.has(key)) continue;
+        const img = Object.assign(new Image(), { alt: "", draggable: false, decoding: "async" });
+        const t = { img, level, ready: false };
+        img.onload = () => { t.ready = true; img.classList.add("in"); sweep(); };
+        img.style.cssText = `left:${(c * TILE - BLEED) / level}px;top:${(r * TILE - BLEED) / level}px;width:${(TILE + 2 * BLEED) / level}px;height:${(TILE + 2 * BLEED) / level}px;z-index:${level}`;
+        img.src = `img/tiles/${key}.webp`;
+        if (loader.active) loader.track(imgReady(img)); else imgReady(img);
+        tiles.set(key, t);
+        tileLayer.append(img);
+      }
+    }
+    tiles.want = want; tiles.level = level;
+    sweep();
+  }
+  // Drop tiles nobody needs; keep the previous level until the new one has loaded (no flashes).
+  function sweep() {
+    const want = tiles.want || new Set();
+    const current = [...want].every((k) => tiles.get(k).ready);
+    for (const [k, t] of tiles) {
+      if (want.has(k)) continue;
+      if (t.level === tiles.level || current) { t.img.remove(); tiles.delete(k); }
+    }
+  }
+  const queueTiles = () => { if (!tileTimer) tileTimer = setTimeout(updateTiles, 120); };
+
   function boundsAt(zz) {
     const [vw, vh] = vwh(), w = map.width * zz, h = map.height * zz, pad = 40;
     return {
@@ -298,7 +392,7 @@
     minZ = Math.min(vw / map.width, vh / map.height) * .9;
     clampView(); render();
   });
-  [z, tx, ty] = homeView(); clampView(); render();
+  [z, tx, ty] = homeView(); clampView(); render(); updateTiles();
   // Shareable links: index.html#wetland (optionally #wetland@0.7 for a zoom level) opens centred on a place.
   const goHash = () => {
     const [pid, hz] = decodeURIComponent(location.hash.slice(1)).split("@");
@@ -339,7 +433,7 @@
     svg.innerHTML = `<defs><mask id="walk-reveal" maskUnits="userSpaceOnUse" x="0" y="0" width="${map.width}" height="${map.height}">
         <path class="walk-mask" d="${dOf(pts)}"/></mask></defs>
       <g mask="url(#walk-reveal)"><path class="walk-glow" d="${road}"/><path class="walk-line" d="${road}"/><path class="walk-tunnel" d="${tunnel}"/></g>`;
-    const mask = svg.querySelector(".walk-mask"), dot = $("walk-dot"), line = polyline(pts);
+    const mask = svg.querySelector(".walk-mask"), maskG = svg.querySelector("g[mask]"), dot = $("walk-dot"), line = polyline(pts);
     const total = line.total;
     mask.style.strokeDasharray = `${total} ${total}`;
     // memo-paper stops (HTML, so they keep a readable size at any zoom like the stickers)
@@ -371,7 +465,7 @@
       if (!on) return;
       const k = Math.min(1, (now - t0) / DRAW);
       if (k < 1) { pos = ease(k) * total; if ((frameNo++ & 1) === 0) reveal(pos); }
-      else { if (!last) { reveal(total); last = now; } pos = (pos + STROLL * Math.min(.1, (now - last) / 1000)) % total; last = now; }
+      else { if (!last) { reveal(total); maskG.removeAttribute("mask"); last = now; } pos = (pos + STROLL * Math.min(.1, (now - last) / 1000)) % total; last = now; }
       place(pos);
       raf = requestAnimationFrame(frame);
     }
@@ -381,6 +475,7 @@
         svg.classList.toggle("on", v); dot.classList.toggle("on", v);
         if (!v) { stops.forEach((s) => s.el.classList.remove("show")); return; }
         if (reduceMotion) { reveal(total); place(0); return; }
+        maskG.setAttribute("mask", "url(#walk-reveal)");
         reveal(0); pos = 0; last = 0; t0 = performance.now();
         raf = requestAnimationFrame(frame);
       },
@@ -502,9 +597,40 @@
   const bitsIn = (delay) => cardBits().forEach((el) => el.animate([{ opacity: 0, translate: "0 8px" }, { opacity: 1, translate: "0 0" }],
     { duration: 260, delay, easing: "ease-out", fill: "backwards" }));
 
+  // Phones have no cursor to tilt the card sticker, so the gyroscope does it (iOS asks once, on the first tap).
+  const tilt = (() => {
+    const touch = matchMedia("(hover: none)").matches;
+    let base = null, live = false, asked = false, queued = false, last = null;
+    const lim = (v) => Math.max(-20, Math.min(20, v));
+    function apply() {
+      queued = false;
+      if (!live || !last) return;
+      const [b, g] = last;
+      if (!base) base = [b, g];
+      const ry = lim((g - base[1]) * .9), rx = lim(-(b - base[0]) * .9);
+      sticker.style.setProperty("--ry", ry.toFixed(1) + "deg");
+      sticker.style.setProperty("--rx", rx.toFixed(1) + "deg");
+      sticker.style.setProperty("--sx", (-ry * .6).toFixed(1) + "px");
+    }
+    function onTurn(e) { if (e.beta == null) return; last = [e.beta, e.gamma]; if (!queued) { queued = true; requestAnimationFrame(apply); } }
+    return {
+      start() {
+        if (!touch || reduceMotion || !window.DeviceOrientationEvent) return;
+        base = null; live = true;
+        if (asked) return;
+        asked = true;
+        const D = window.DeviceOrientationEvent;
+        if (typeof D.requestPermission === "function") D.requestPermission().then((s) => { if (s === "granted") addEventListener("deviceorientation", onTurn); }).catch(() => {});
+        else addEventListener("deviceorientation", onTurn);
+      },
+      stop() { live = false; ["--rx", "--ry", "--sx"].forEach((v) => sticker.style.removeProperty(v)); },
+    };
+  })();
+
   async function openCard(p) {
     if (busy || !layer.hidden) return;
     busy = true;
+    tilt.start(); // must run inside the tap itself for the iOS permission prompt
     lastFocus = document.activeElement;
     current = p;
     const m = markerEls.get(p.id), lift = m.querySelector(".lift");
@@ -514,17 +640,19 @@
     if (reduceMotion) {
       layer.hidden = false; m.classList.add("peeled");
     } else {
+      // a quick lift (70 ms) so the hand-off still reads as "peeling the sticker off"; the image is
+      // already decoded from the map, so only wait for decode when it really isn't ready yet
       const up = lift.animate([{ transform: getComputedStyle(lift).transform }, { transform: "translateY(-12px) scale(1.18) rotate(-4deg)" }],
-        { duration: 150, easing: "cubic-bezier(.2,.8,.3,1)", fill: "forwards" });
-      await Promise.all([up.finished.catch(() => {}), sticker.decode ? sticker.decode().catch(() => {}) : 0]);
+        { duration: 70, easing: "cubic-bezier(.2,.8,.3,1)", fill: "forwards" });
+      await Promise.all([up.finished.catch(() => {}), sticker.complete && sticker.naturalWidth ? 0 : sticker.decode ? sticker.decode().catch(() => {}) : 0]);
       layer.hidden = false;
       const from = fromMarker(p), pk = paper(false);
       m.classList.add("peeled");
       up.cancel();
       backdrop.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 320, easing: "ease-out" });
       card.animate([{ transform: from, ...pk[0] }, { offset: .35, ...pk[0] }, { transform: "rotate(-1deg) scale(1.02)", offset: .78, ...pk[1] }, { transform: rest }],
-        { duration: 560, easing: "cubic-bezier(.25,.85,.3,1)" });
-      bitsIn(260);
+        { duration: 480, easing: "cubic-bezier(.25,.85,.3,1)" });
+      bitsIn(220);
     }
     stampIfNew(p);
     $("card-close").focus({ preventScroll: true });
@@ -548,6 +676,7 @@
     if (!reduceMotion) lift.animate([{ transform: "scale(1.1) rotate(-3deg)" }, { transform: "scale(.95) rotate(1deg)", offset: .55 }, { transform: getComputedStyle(lift).transform }],
       { duration: 380, easing: "ease-out" });
     play("land");
+    tilt.stop();
     current = null; busy = false;
     lastFocus && lastFocus.focus({ preventScroll: true });
   }
@@ -582,4 +711,5 @@
     sticker.style.setProperty("--sx", (-px * 14).toFixed(1) + "px");
   });
   art.addEventListener("pointerleave", () => ["--rx", "--ry", "--sx"].forEach((v) => sticker.style.removeProperty(v)));
+  loader.finish();
 })();

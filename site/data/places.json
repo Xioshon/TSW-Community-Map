@@ -22,7 +22,7 @@
       "area": "嘉湖山莊麗湖居旁",
       "lat": 22.4603,
       "lon": 114.0078,
-      "sticker": "stickers/simple/dragon_park.png",
+      "sticker": "stickers/simple/dragon_park.webp",
       "tags": [
         "地標",
         "動物"
@@ -37,7 +37,7 @@
       "area": "天湖站旁",
       "lat": 22.4548,
       "lon": 114.0032,
-      "sticker": "stickers/simple/tsw_park.png",
+      "sticker": "stickers/simple/tsw_park.webp",
       "tags": [
         "地標",
         "人"
@@ -52,7 +52,7 @@
       "area": "天瑞邨 · 岱民天瑞店",
       "lat": 22.4565,
       "lon": 113.9988,
-      "sticker": "stickers/simple/two_dish_rice.png",
+      "sticker": "stickers/simple/two_dish_rice.webp",
       "tags": [
         "美食",
         "人"
@@ -67,7 +67,7 @@
       "area": "天水圍醫院旁",
       "lat": 22.4594,
       "lon": 113.9948,
-      "sticker": "stickers/simple/smelly_river.png",
+      "sticker": "stickers/simple/smelly_river.webp",
       "tags": [
         "地標",
         "人"
@@ -82,7 +82,7 @@
       "area": "天水圍北",
       "lat": 22.4688,
       "lon": 114.008,
-      "sticker": "stickers/simple/wetland.png",
+      "sticker": "stickers/simple/wetland.webp",
       "tags": [
         "地標",
         "動物"
@@ -97,7 +97,7 @@
       "area": "天水圍站旁 · 屏山文物徑",
       "lat": 22.4473,
       "lon": 114.0052,
-      "sticker": "stickers/simple/tsui_sing_lau.png",
+      "sticker": "stickers/simple/tsui_sing_lau.webp",
       "tags": [
         "地標"
       ],
@@ -117,7 +117,7 @@
       ],
       "stars": 4,
       "text": "東華三院用社企方式營運嘅墟市，有成百個小檔，好多檔主都係區內街坊，賣衫、雜貨、小食都有。（示範文字，待組員補充；營業時間以東華三院公佈為準）",
-      "sticker": "stickers/simple/tin_sau_bazaar.png",
+      "sticker": "stickers/simple/tin_sau_bazaar.webp",
       "sound": null
     },
     {
@@ -132,7 +132,7 @@
       ],
       "stars": 4,
       "text": "全港買少見少嘅推車仔點心，天水圍就有一間！每朝六點半開始推車仔巡場，賣晒即止，點心全部人手整。（示範文字，待組員補充；以店舖最新安排為準）",
-      "sticker": "stickers/simple/dim_sum_cart.png",
+      "sticker": "stickers/simple/dim_sum_cart.webp",
       "sound": null
     },
     {
@@ -146,7 +146,7 @@
       ],
       "stars": 3,
       "text": "康文署嘅天業路休憩處寵物公園，有八百幾平方米，設寵物沖身處同狗廁所，24 小時開放，係區內少數可以畀狗狗放電嘅地方。（示範文字，待組員補充）",
-      "sticker": "stickers/simple/dog_park.png",
+      "sticker": "stickers/simple/dog_park.webp",
       "sound": null
     },
     {
@@ -160,7 +160,7 @@
       ],
       "stars": 3,
       "text": "天水圍地勢平坦，單車徑四通八達。呢度係新界單車徑網絡嘅出入站之一，可以由天水圍一路踩去元朗甚至屯門。（示範文字，待組員補充）",
-      "sticker": "stickers/simple/cycling_hub.png",
+      "sticker": "stickers/simple/cycling_hub.webp",
       "sound": null
     },
     {
@@ -174,7 +174,7 @@
       ],
       "stars": 3,
       "text": "估唔到吧？天水圍東邊有個射箭場，係香港射箭總會嘅場地，平日畀已註冊嘅射手練習，間中仲會舉行比賽。（示範文字，待組員補充）",
-      "sticker": "stickers/simple/archery.png",
+      "sticker": "stickers/simple/archery.webp",
       "sound": null
     },
     {
@@ -188,7 +188,7 @@
       ],
       "stars": 3,
       "text": "天水圍起樓之前，呢一帶係魚塘、稻田同村落。新市鎮高樓旁邊，仲保留住呢間鄉村古廟，一新一舊就隔住條河。（示範文字，待組員補充）",
-      "sticker": "stickers/simple/yeung_hau_temple.png",
+      "sticker": "stickers/simple/yeung_hau_temple.webp",
       "sound": null
     }
   ]
