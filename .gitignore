@@ -1,0 +1,5 @@
+# previews, scratch renders and local tooling
+out/
+art/tests/
+.claude/
+.DS_Store

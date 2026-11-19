@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-Hant-HK">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>夜遊「圍」園</title>
+<meta name="description" content="一張手作拼貼風格的天水圍社區地圖">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=15">
+</head>
+<body>
+<header class="title-card">
+  <span class="tape tape-a"></span>
+  <h1>夜遊「圍」園</h1>
+  <p>天水圍社區地圖 · 撳貼紙睇故事</p>
+  <p class="egg" aria-live="polite"></p>
+</header>
+
+<div class="top-right">
+  <button id="stamps" class="chip" aria-label="已收集印仔">🔖 <span id="stamp-count">0/0</span></button>
+  <button id="night" class="round" aria-pressed="false" aria-label="入夜">🌙</button>
+  <button id="sound" class="round" aria-pressed="true" aria-label="音效">🔈</button>
+</div>
+
+<main id="viewport" aria-label="天水圍地圖，可以拖動同縮放">
+  <div id="stage">
+    <div id="map" role="img" aria-label="手繪拼貼風格的天水圍地圖"></div>
+    <div id="dusk"></div>
+    <div id="glows"></div>
+    <svg id="walk" aria-hidden="true"></svg>
+    <svg id="rails" aria-hidden="true"></svg>
+    <div id="edges"></div>
+    <div id="markers"></div>
+  </div>
+</main>
+
+<nav id="filters" aria-label="分類"></nav>
+
+<nav class="zoom" aria-label="地圖縮放">
+  <button id="zoom-in" class="round" aria-label="放大">＋</button>
+  <button id="zoom-out" class="round" aria-label="縮小">－</button>
+  <button id="zoom-reset" class="round" aria-label="回到起點">⟲</button>
+</nav>
+
+<div id="card-layer" hidden>
+  <div id="card-backdrop"></div>
+  <article id="card" role="dialog" aria-modal="true" aria-labelledby="card-title">
+    <span class="tape tape-b"></span>
+    <button id="card-close" aria-label="關閉">✕</button>
+    <div id="card-art"><img id="card-sticker" alt=""></div>
+    <div id="card-stamp" aria-hidden="true">到此<br>一遊</div>
+    <h2 id="card-title"></h2>
+    <p id="card-area"></p>
+    <p id="card-stars" aria-label="評分"></p>
+    <ul id="card-tags"></ul>
+    <p id="card-text"></p>
+    <div class="card-actions">
+      <button id="card-prev" aria-label="上一個">‹</button>
+      <button id="card-sound" disabled>🔊 聲效製作中</button>
+      <button id="card-next" aria-label="下一個">›</button>
+    </div>
+  </article>
+</div>
+
+<script src="app.js?v=15"></script>
+</body>
+</html>

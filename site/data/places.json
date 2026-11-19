@@ -1,0 +1,195 @@
+{
+  "map": {
+    "image": "img/map.svg",
+    "width": 1800,
+    "height": 2472,
+    "west": 113.9905,
+    "north": 22.4745,
+    "kx": 0.92416,
+    "scale": 74912.119
+  },
+  "categories": [
+    "美食",
+    "人",
+    "地標",
+    "動物",
+    "特別"
+  ],
+  "places": [
+    {
+      "id": "dragon-park",
+      "name": "龍園",
+      "area": "嘉湖山莊麗湖居旁",
+      "lat": 22.4603,
+      "lon": 114.0078,
+      "sticker": "stickers/simple/dragon_park.png",
+      "tags": [
+        "地標",
+        "動物"
+      ],
+      "stars": 5,
+      "text": "一行入月洞門，成個世界即刻靜晒。錦鯉喺燈籠下面游嚟游去，池邊仲有隻白天鵝雕像；記得望吓石柱上面嗰條盤住嘅龍。（示範文字，待組員補充）",
+      "sound": null
+    },
+    {
+      "id": "tsw-park",
+      "name": "天水圍公園",
+      "area": "天湖站旁",
+      "lat": 22.4548,
+      "lon": 114.0032,
+      "sticker": "stickers/simple/tsw_park.png",
+      "tags": [
+        "地標",
+        "人"
+      ],
+      "stars": 4,
+      "text": "夜晚嘅公園一啲都唔靜：細路喺度盪韆鞦，大榕樹下面嘅紅色涼亭坐滿街坊。公園入面有二十幾棵八重櫻，每年大約二月開到成片粉紅色。（示範文字，待組員補充）",
+      "sound": null
+    },
+    {
+      "id": "two-dish-rice",
+      "name": "兩餸飯",
+      "area": "天瑞邨 · 岱民天瑞店",
+      "lat": 22.4565,
+      "lon": 113.9988,
+      "sticker": "stickers/simple/two_dish_rice.png",
+      "tags": [
+        "美食",
+        "人"
+      ],
+      "stars": 4,
+      "text": "夜晚八點，舖頭門口已經排咗一條人龍，大多數係收工嘅叔叔伯伯。燈箱寫住「兩餸飯 28 元」，原條倉魚 30 蚊，白飯唔收錢——係街坊最實際嘅一餐。（示範文字，待組員補充）",
+      "sound": null
+    },
+    {
+      "id": "smelly-river",
+      "name": "臭河",
+      "area": "天水圍醫院旁",
+      "lat": 22.4594,
+      "lon": 113.9948,
+      "sticker": "stickers/simple/smelly_river.png",
+      "tags": [
+        "地標",
+        "人"
+      ],
+      "stars": 3,
+      "text": "大家都叫佢「臭河」，正名係天水圍明渠，大約 2.7 公里長，分隔天水圍同流浮山嗰邊。夜晚沿住河邊行其實幾舒服：有拖住手散步嘅公公婆婆、放學傾偈嘅學生，河邊仲有單車徑。（示範文字，待組員補充）",
+      "sound": null
+    },
+    {
+      "id": "wetland",
+      "name": "濕地公園",
+      "area": "天水圍北",
+      "lat": 22.4668,
+      "lon": 114.0072,
+      "sticker": "stickers/simple/wetland.png",
+      "tags": [
+        "地標",
+        "動物"
+      ],
+      "stars": 5,
+      "text": "天水圍北面嘅濕地公園，住咗香港最出名嘅鱷魚「貝貝」。木棧道、觀鳥屋、招潮蟹，慢慢行可以行成個下晝。（示範文字，待組員補充）",
+      "sound": null
+    },
+    {
+      "id": "tsui-sing-lau",
+      "name": "聚星樓",
+      "area": "天水圍站旁 · 屏山文物徑",
+      "lat": 22.4473,
+      "lon": 114.0052,
+      "sticker": "stickers/simple/tsui_sing_lau.png",
+      "tags": [
+        "地標"
+      ],
+      "stars": 4,
+      "text": "出咗天水圍站行幾步就到，係香港唯一現存嘅古塔，屬於屏山文物徑嘅一部分。（示範文字，待組員補充）",
+      "sound": null
+    },
+    {
+      "id": "tin-sau-bazaar",
+      "name": "天秀墟",
+      "area": "天秀路 · 東華三院",
+      "lat": 22.4657,
+      "lon": 114.0007,
+      "tags": [
+        "美食",
+        "人"
+      ],
+      "stars": 4,
+      "text": "東華三院用社企方式營運嘅墟市，有成百個小檔，好多檔主都係區內街坊，賣衫、雜貨、小食都有。（示範文字，待組員補充；營業時間以東華三院公佈為準）",
+      "sticker": "stickers/simple/tin_sau_bazaar.png",
+      "sound": null
+    },
+    {
+      "id": "dim-sum-cart",
+      "name": "推車仔點心",
+      "area": "天恩商場 · 煲仔王",
+      "lat": 22.4625,
+      "lon": 113.9962,
+      "tags": [
+        "美食",
+        "人"
+      ],
+      "stars": 4,
+      "text": "全港買少見少嘅推車仔點心，天水圍就有一間！每朝六點半開始推車仔巡場，賣晒即止，點心全部人手整。（示範文字，待組員補充；以店舖最新安排為準）",
+      "sticker": "stickers/simple/dim_sum_cart.png",
+      "sound": null
+    },
+    {
+      "id": "dog-park",
+      "name": "寵物公園",
+      "area": "天業路休憩處 · 近濕地公園",
+      "lat": 22.4654,
+      "lon": 114.0067,
+      "tags": [
+        "動物"
+      ],
+      "stars": 3,
+      "text": "康文署嘅天業路休憩處寵物公園，有八百幾平方米，設寵物沖身處同狗廁所，24 小時開放，係區內少數可以畀狗狗放電嘅地方。（示範文字，待組員補充）",
+      "sticker": "stickers/simple/dog_park.png",
+      "sound": null
+    },
+    {
+      "id": "cycling-hub",
+      "name": "單車匯合中心",
+      "area": "天水圍東 · 新界單車徑",
+      "lat": 22.4511,
+      "lon": 114.0081,
+      "tags": [
+        "特別"
+      ],
+      "stars": 3,
+      "text": "天水圍地勢平坦，單車徑四通八達。呢度係新界單車徑網絡嘅出入站之一，可以由天水圍一路踩去元朗甚至屯門。（示範文字，待組員補充）",
+      "sticker": "stickers/simple/cycling_hub.png",
+      "sound": null
+    },
+    {
+      "id": "archery",
+      "name": "射箭場",
+      "area": "香港射箭總會藍薪福射箭場",
+      "lat": 22.4602,
+      "lon": 114.012,
+      "tags": [
+        "特別"
+      ],
+      "stars": 3,
+      "text": "估唔到吧？天水圍東邊有個射箭場，係香港射箭總會嘅場地，平日畀已註冊嘅射手練習，間中仲會舉行比賽。（示範文字，待組員補充）",
+      "sticker": "stickers/simple/archery.png",
+      "sound": null
+    },
+    {
+      "id": "yeung-hau-temple",
+      "name": "楊侯宮",
+      "area": "明渠以西 · 鄉村古廟",
+      "lat": 22.4536,
+      "lon": 113.9931,
+      "tags": [
+        "地標"
+      ],
+      "stars": 3,
+      "text": "天水圍起樓之前，呢一帶係魚塘、稻田同村落。新市鎮高樓旁邊，仲保留住呢間鄉村古廟，一新一舊就隔住條河。（示範文字，待組員補充）",
+      "sticker": "stickers/simple/yeung_hau_temple.png",
+      "sound": null
+    }
+  ]
+}

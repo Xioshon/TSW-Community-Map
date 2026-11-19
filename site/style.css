@@ -1,0 +1,344 @@
+/* 夜遊「圍」園 — paper collage UI. Day = warm paper; night = sodium-lamp estate night (umber + amber). */
+@property --edge { syntax: "<color>"; inherits: true; initial-value: #F4EADA; }
+
+:root {
+  --paper: #F4EADA;
+  --card: #FBF6EC;
+  --ink: #3B2A20;
+  --ink-soft: rgba(59, 42, 32, .6);
+  --accent: #E98B3A;
+  --red: #D9473A;
+  --shadow: rgba(59, 42, 32, .25);
+  --edge: #F4EADA;
+  --spring: cubic-bezier(.3, 1.6, .5, 1);
+  --font: "LXGW WenKai TC", "Hannotate TC", "Kaiti TC", serif;
+  --night-ease: 1.1s ease;
+}
+body.night {
+  --card: #33271F;          /* walnut paper */
+  --ink: #F0E0C2;           /* lamp-lit cream */
+  --ink-soft: rgba(240, 224, 194, .62);
+  --accent: #F2B35B;        /* sodium amber */
+  --red: #E46A4B;
+  --shadow: rgba(10, 5, 2, .45);
+  --edge: #6D5E52;          /* paper under the night wash */
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--edge);
+  color: var(--ink);
+  font-family: var(--font);
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  transition: --edge var(--night-ease), background-color var(--night-ease);
+}
+button { font-family: var(--font); color: var(--ink); cursor: pointer; }
+button:focus-visible { outline: 2.5px dashed var(--accent); outline-offset: 3px; }
+
+/* ---------- map viewport ---------- */
+#viewport { position: fixed; inset: 0; overflow: hidden; touch-action: none; cursor: grab; }
+#viewport.dragging { cursor: grabbing; }
+#stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+#stage.moving { will-change: transform; } /* cached while moving, redrawn sharp when still */
+#map, #map svg { display: block; pointer-events: none; }
+#markers, #glows { position: absolute; inset: 0; }
+#rails { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+
+/* Map edges dissolve into the background (a cheap gradient layer instead of a mask). */
+#edges {
+  position: absolute; inset: -2px; pointer-events: none;
+  background:
+    linear-gradient(90deg, var(--edge), transparent 170px, transparent calc(100% - 170px), var(--edge)),
+    linear-gradient(180deg, var(--edge), transparent 170px, transparent calc(100% - 170px), var(--edge));
+}
+
+/* night wash: warm umber multiply, like sodium-lit estates in the team's photos */
+#dusk {
+  position: absolute; inset: 0; background: #3B2B22;
+  mix-blend-mode: multiply; opacity: 0;
+  transition: opacity var(--night-ease); pointer-events: none;
+}
+.night #dusk { opacity: .72; }
+.glow {
+  position: absolute; width: 150px; height: 150px; margin: -75px 0 0 -75px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 196, 110, .6), rgba(255, 170, 80, .2) 45%, transparent 70%);
+  mix-blend-mode: screen; opacity: 0; transform: scale(.4);
+  transition: opacity var(--night-ease), transform var(--night-ease); pointer-events: none;
+}
+.night .glow { opacity: 1; transform: scale(1); animation: flicker 4s ease-in-out infinite; animation-delay: var(--d, 0s); }
+@keyframes flicker { 0%, 100% { opacity: 1; } 47% { opacity: .82; } 50% { opacity: .95; } }
+
+/* ---------- light rail: two-car sets ---------- */
+.car-shadow { fill: rgba(40, 25, 15, .22); }
+.car-body { fill: #F7F1E3; stroke: #3B2A20; stroke-width: 1.5; }
+.car-stripe { fill: #E98B3A; }
+.car-win { fill: #5A4A3E; }
+.car-front { fill: #3B2A20; }
+.car-light { fill: #FFF1C2; }
+.car-panto { fill: none; stroke: #3B2A20; stroke-width: .9; }
+.night .car-body { fill: #EADCC2; }
+.night .car-win, .night .car-front { fill: #FFC86B; }
+.night .car-light { fill: #FFF6D8; filter: drop-shadow(0 0 2px #FFD98A); }
+
+/* ---------- stickers ---------- */
+.marker {
+  position: absolute; width: 0; height: 0;
+  transform: scale(var(--k, 1));
+  transition: opacity .35s, filter .35s;
+}
+.marker.dim { opacity: .18; filter: grayscale(1); pointer-events: none; }
+/* the button is a still hit area; only .lift moves (no hover flicker at the edges) */
+.marker button {
+  position: absolute; left: -50px; bottom: 4px; width: 100px; height: 100px;
+  padding: 0; border: 0; background: none;
+}
+.marker .lift {
+  position: absolute; inset: 0; display: block;
+  transform-origin: 50% 100%;
+  /* --near: 0..1 as the mouse approaches — a small lean before contact */
+  transform: translateY(calc(var(--near, 0) * -4px)) scale(calc(1 + var(--near, 0) * .05));
+  transition: transform .35s var(--spring);
+  animation: stick-on .7s var(--spring) backwards;
+  animation-delay: var(--delay, 0s);
+}
+.marker:not(.placeholder) button:hover .lift,
+.marker:not(.placeholder) button:focus-visible .lift { transform: translateY(-8px) scale(1.12) rotate(-2deg); }
+.marker:not(.placeholder) button:active .lift { transform: translateY(-2px) scale(1.02); transition-duration: .1s; }
+.marker .sticker {
+  width: 100%; height: 100%; object-fit: contain; pointer-events: none; display: block;
+  filter: drop-shadow(0 4px 4px rgba(59, 42, 32, .3));
+  transform-origin: 50% 100%;
+  animation: sway 3.4s ease-in-out infinite; animation-delay: var(--sway, 0s);
+  transition: filter .3s;
+}
+.marker button:hover .sticker { filter: drop-shadow(0 12px 9px rgba(59, 42, 32, .3)); }
+.night .marker .sticker { filter: drop-shadow(0 0 10px rgba(255, 196, 110, .7)); }
+.marker.peeled .sticker { visibility: hidden; }
+
+.marker .pin {
+  position: absolute; left: -7px; top: -7px; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--red); border: 3px solid var(--ink);
+}
+/* The name tag moves *with* the sticker (same direction, smaller), never against it. */
+.marker .label {
+  position: absolute; left: 50%; bottom: -34px;
+  transform: translateX(-50%) rotate(-2deg) translateY(calc(var(--near, 0) * -1px));
+  white-space: nowrap; background: var(--card);
+  border: 1.5px solid var(--ink); border-radius: 4px; padding: 1px 8px;
+  font-size: 15px; box-shadow: 0 2px 0 var(--shadow); pointer-events: none;
+  opacity: 0; scale: .7;
+  transition: transform .35s var(--spring), opacity .25s ease, scale .35s var(--spring), background-color .3s, color .3s, border-color .3s;
+}
+#markers.detail .marker .label, .marker:has(button:hover) .label, .marker:has(button:focus-visible) .label, .marker.active .label { opacity: 1; scale: 1; }
+.marker:has(button:hover) .label { transform: translateX(-50%) rotate(-3deg) translateY(-3px) scale(1.05); }
+.marker.active .label { background: var(--ink); color: var(--card); transform: translateX(-50%) rotate(-3deg) translateY(-3px) scale(1.1); }
+.marker.visited .pin::after { content: "✓"; position: absolute; left: 10px; top: -14px; font: 700 14px var(--font); color: var(--red); }
+
+.marker.placeholder button { left: -30px; bottom: 6px; width: 60px; height: 60px; }
+.marker.placeholder .lift {
+  inset: 4px; border-radius: 50%;
+  border: 2.5px dashed var(--ink); background: var(--card); color: var(--ink);
+  display: grid; place-items: center; font: 700 24px var(--font);
+  transition: transform .35s var(--spring), background-color var(--night-ease), color var(--night-ease), border-color var(--night-ease);
+  animation: stick-on .7s var(--spring) backwards, pulse 2.4s ease-in-out infinite;
+  animation-delay: var(--delay, 0s), calc(var(--delay, 0s) + .7s);
+}
+.marker.placeholder button:hover .lift { transform: scale(1.12) rotate(8deg); }
+.marker.placeholder button:active .lift { transform: scale(.95); transition-duration: .1s; }
+.marker.placeholder .label { bottom: -32px; color: var(--ink-soft); border-style: dashed; }
+.marker .bubble {
+  position: absolute; left: 50%; bottom: 72px; transform: translateX(-50%) scale(.6);
+  background: var(--card); color: var(--ink); border: 1.5px solid var(--ink); border-radius: 10px;
+  padding: 3px 10px; font-size: 14px; white-space: nowrap;
+  opacity: 0; transition: opacity .2s, transform .25s var(--spring); pointer-events: none;
+}
+.marker .bubble.show { opacity: 1; transform: translateX(-50%) scale(1); }
+
+.ripple {
+  position: absolute; width: 40px; height: 40px; margin: -20px 0 0 -20px;
+  border: 2.5px solid var(--ink); border-radius: 50%;
+  animation: ripple .55s ease-out forwards; pointer-events: none;
+}
+@keyframes ripple { from { transform: scale(.2); opacity: .7; } to { transform: scale(1.6); opacity: 0; } }
+@keyframes stick-on {
+  0% { opacity: 0; transform: scale(.2) rotate(-25deg); }
+  70% { opacity: 1; transform: scale(1.12) rotate(4deg); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes sway { 0%, 100% { transform: rotate(-3deg) translateY(0); } 50% { transform: rotate(3deg) translateY(-4px); } }
+/* `scale` (not transform) so the pulse never fights hover */
+@keyframes pulse { 0%, 100% { scale: 1; } 50% { scale: 1.08; } }
+
+/* ---------- chrome ---------- */
+.title-card {
+  position: fixed; z-index: 10; left: 16px; top: max(16px, env(safe-area-inset-top));
+  background: var(--card); border: 2px solid var(--ink); border-radius: 8px;
+  padding: 10px 18px 8px; transform: rotate(-2.5deg);
+  box-shadow: 3px 5px 0 var(--shadow); pointer-events: none;
+  transition: background-color var(--night-ease), border-color var(--night-ease), box-shadow var(--night-ease);
+}
+.title-card h1 { margin: 0; font-size: clamp(24px, 6vw, 38px); letter-spacing: .04em; transition: color var(--night-ease), text-shadow var(--night-ease); }
+.title-card p { margin: 2px 0 0; font-size: 14px; color: #B5523A; transition: color var(--night-ease); }
+.tape { position: absolute; height: 18px; width: 74px; background: repeating-linear-gradient(45deg, #EFC9B4 0 8px, #F7DFD2 8px 16px); opacity: .9; transition: opacity var(--night-ease); }
+.tape-a { left: -18px; top: -8px; transform: rotate(-20deg); }
+.tape-b { left: 50%; top: -10px; transform: translateX(-50%) rotate(-3deg); }
+
+/* Every pressable control: lifts on hover, presses in on touch, springs back. */
+.round, .chip, .card-actions > button, #card-close {
+  border: 2px solid var(--ink); background: var(--card);
+  box-shadow: 2px 3px 0 var(--shadow);
+  transition: transform .3s var(--spring), box-shadow .2s, background-color .35s, color .35s, border-color .35s;
+}
+.round { width: 44px; height: 44px; border-radius: 50%; font-size: 19px; font-weight: 700; }
+.chip { height: 36px; border-radius: 999px; padding: 0 12px; font-size: 15px; }
+.round:hover, .chip:hover, .card-actions > button:hover:not(:disabled), #card-close:hover {
+  transform: translateY(-3px) rotate(-3deg) scale(1.05); box-shadow: 3px 6px 0 var(--shadow);
+}
+.round:active, .chip:active, .card-actions > button:active:not(:disabled), #card-close:active {
+  transform: translateY(2px) scale(.95); box-shadow: 0 0 0 var(--shadow); transition-duration: .08s;
+}
+.top-right { position: fixed; z-index: 10; right: 16px; top: max(16px, env(safe-area-inset-top)); display: flex; gap: 8px; align-items: center; }
+#stamps.bump { animation: bump .5s var(--spring); }
+@keyframes bump { 40% { transform: scale(1.3) rotate(-6deg); } }
+.zoom { position: fixed; z-index: 10; right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
+
+#filters {
+  position: fixed; z-index: 10; left: 16px; right: 76px; bottom: max(16px, env(safe-area-inset-bottom));
+  display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 6px 2px 6px;
+}
+#filters::-webkit-scrollbar { display: none; }
+#filters .chip { flex: none; }
+#filters .chip[aria-pressed="true"] { background: var(--ink); color: var(--card); transform: rotate(-2deg) scale(1.06); }
+#filters .chip[aria-pressed="true"]:hover { transform: translateY(-3px) rotate(-3deg) scale(1.08); }
+#filters .chip.pop { animation: chip-pop .38s var(--spring); }
+@keyframes chip-pop { 0% { transform: scale(.9); } 60% { transform: rotate(-3deg) scale(1.14); } 100% { transform: rotate(-2deg) scale(1.06); } }
+
+/* ---------- story card ---------- */
+#card-layer { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px; }
+#card-layer[hidden] { display: none; }
+#card-backdrop { position: absolute; inset: 0; background: rgba(59, 42, 32, .35); }
+#card {
+  position: relative; z-index: 1; width: min(380px, 100%); max-height: calc(100dvh - 32px); overflow: auto;
+  background: var(--card); border: 2px solid var(--ink); border-radius: 10px;
+  padding: 18px 20px 16px; text-align: center;
+  box-shadow: 5px 8px 0 var(--shadow); transform: rotate(-1deg);
+  user-select: text; -webkit-user-select: text;
+  transition: background-color var(--night-ease), color var(--night-ease), border-color var(--night-ease);
+}
+#card-close {
+  position: absolute; right: 10px; top: 10px; z-index: 2;
+  width: 34px; height: 34px; border-radius: 50%; font-size: 16px; line-height: 1;
+}
+#card-art { perspective: 600px; }
+#card-sticker {
+  width: 72%; aspect-ratio: 1; object-fit: contain; margin: 4px auto 0; display: block;
+  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform .15s ease-out;
+  filter: drop-shadow(var(--sx, 0px) 8px 6px rgba(40, 25, 15, .25));
+}
+#card-stamp {
+  position: absolute; right: 22px; top: 150px; width: 78px; height: 78px; border-radius: 50%;
+  border: 3px double var(--red); color: var(--red);
+  display: grid; place-items: center; text-align: center; font: 700 17px/1.1 var(--font);
+  transform: rotate(-14deg) scale(0); opacity: 0; pointer-events: none;
+}
+#card-stamp.show { opacity: .85; transform: rotate(-14deg) scale(1); }
+#card-stamp.slam { animation: slam .45s cubic-bezier(.2, 1.6, .4, 1) .5s both; }
+@keyframes slam { 0% { opacity: 0; transform: rotate(-30deg) scale(2.2); } 100% { opacity: .85; transform: rotate(-14deg) scale(1); } }
+#card h2 { margin: 6px 0 0; font-size: 28px; }
+#card-area { margin: 2px 0 0; color: var(--ink-soft); }
+#card-stars { margin: 6px 0 0; color: var(--accent); letter-spacing: .15em; font-size: 18px; }
+#card-tags { list-style: none; padding: 0; margin: 8px 0 0; display: flex; gap: 6px; justify-content: center; }
+#card-tags li { border: 1.5px solid var(--ink); border-radius: 999px; padding: 0 10px; font-size: 14px; }
+#card-text { text-align: left; line-height: 1.7; margin: 12px 0 14px; }
+.card-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.card-actions > button:not(#card-sound) { width: 40px; height: 40px; border-radius: 50%; font-size: 22px; line-height: 1; }
+.card-actions > button:disabled { opacity: .25; cursor: default; box-shadow: none; }
+#card-sound { border-style: dashed; border-radius: 999px; background: none; padding: 6px 16px; font-size: 16px; color: var(--ink-soft); box-shadow: none; }
+
+/* ---------- night details ---------- */
+body.night .title-card h1 { color: #F5B95C; text-shadow: 0 0 10px rgba(245, 170, 80, .5), 0 0 24px rgba(230, 140, 60, .25); }
+body.night .title-card p { color: #E8957A; }
+body.night .tape { opacity: .5; }
+body.night #filters .chip[aria-pressed="true"] { background: var(--accent); color: #33271F; border-color: var(--accent); }
+body.night #card-backdrop { background: rgba(20, 12, 8, .55); }
+
+@media (max-width: 520px) {
+  .title-card { padding: 8px 12px 6px; }
+  .title-card p { font-size: 12px; }
+  .top-right { flex-direction: column; align-items: flex-end; }
+  .top-right .round { width: 38px; height: 38px; font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* ---------- night walk easter egg: amber footpath, memo-paper stops, a lantern walking it ---------- */
+#walk { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none;
+  opacity: 0; transition: opacity .9s ease; }
+#walk.on { opacity: 1; }
+.walk-mask { fill: none; stroke: #fff; stroke-width: 40; stroke-linecap: round; stroke-linejoin: round; }
+.walk-glow { fill: none; stroke: rgba(255, 190, 95, .26); stroke-width: 22; stroke-linecap: round; stroke-linejoin: round; }
+.walk-line { fill: none; stroke: #FFC86B; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 12; }
+.walk-tunnel { fill: none; stroke: #FFC86B; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 10 9; opacity: .55; }
+.walker { fill: #FFF3D0; stroke: #E98B3A; stroke-width: 2; }
+.walker-halo { fill: rgba(255, 196, 110, .35); animation: lantern 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes lantern { 0%, 100% { opacity: .55; scale: .85; } 50% { opacity: 1; scale: 1.1; } }
+
+.walk-stop {
+  position: absolute; width: 0; height: 0; pointer-events: none;
+  transform: scale(var(--k, 1)); opacity: 0; transition: opacity .3s;
+}
+.walk-stop .memo, .walk-stop small {
+  position: absolute; left: 0; white-space: nowrap; translate: -50% 0;
+}
+.walk-stop .memo {
+  bottom: 10px; padding: 3px 9px 4px; font: 700 15px var(--font); color: #FFF4E2;
+  background: #C9473A; border-radius: 2px; box-shadow: 2px 3px 0 rgba(10, 5, 2, .45);
+  rotate: var(--tilt, 0deg); scale: .3; transition: scale .5s var(--spring);
+}
+.walk-stop .memo b { display: inline-block; margin-right: 5px; font-size: 12px; opacity: .8; }
+.walk-stop small { top: 2px; font-size: 12px; color: #FFD99A; text-shadow: 0 1px 3px rgba(10, 5, 2, .8); }
+.walk-stop::before {
+  content: ""; position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; border-radius: 50%;
+  background: #FFC86B; box-shadow: 0 0 10px 3px rgba(255, 196, 110, .6);
+}
+.walk-stop.show { opacity: 1; }
+.walk-stop.show .memo { scale: 1; }
+.walk-stop.start .memo { background: #E98B3A; }
+
+.title-card .egg { margin: 0; max-height: 0; opacity: 0; overflow: hidden; font-size: 13px; color: var(--accent);
+  transition: max-height .6s ease, opacity .6s ease, margin .6s ease; }
+.night .title-card .egg { max-height: 24px; opacity: 1; margin-top: 3px; }
+
+/* a place still waiting for its sticker: dashed frame in the card */
+#card-art { position: relative; }
+#card-art.pending::before {
+  content: "?"; position: absolute; left: 14%; top: 4px; width: 72%; aspect-ratio: 1;
+  border: 3px dashed var(--ink-soft); border-radius: 50%; box-sizing: border-box;
+  display: grid; place-items: center; font: 700 64px var(--font); color: var(--ink-soft);
+}
+#card-art.pending::after {
+  content: "貼紙製作中"; position: absolute; left: 0; right: 0; bottom: 18%; text-align: center;
+  font-size: 14px; color: var(--ink-soft);
+}
+.marker.placeholder.peeled .lift { visibility: hidden; }
+.walk-stop.badge .memo {
+  left: -44px; bottom: -2px; translate: 0 0; width: 26px; height: 26px; padding: 0; border-radius: 50%;
+  display: grid; place-items: center;
+}
+.walk-stop.badge .memo b { margin: 0; font-size: 14px; opacity: 1; }
+
+/* ---------- level of detail ---------- */
+#markers:not(.detail) .marker .sticker { animation-play-state: paused; }
+#markers:not(.detail) .marker.placeholder .lift { animation-play-state: running, paused; }
+#markers:not(.detail) .marker button:hover .sticker { animation-play-state: running; }
+#markers:not(.detail) .marker .pin { scale: .7; }
+.walk-stop .memo i { font-style: normal; }
+/* walk memos are numbered dots until you zoom right in */
+#markers:not(.close) .walk-stop .memo { width: 24px; height: 24px; padding: 0; border-radius: 50%; display: grid; place-items: center; bottom: 8px; }
+#markers:not(.close) .walk-stop .memo i { display: none; }
+#markers:not(.close) .walk-stop .memo b { margin: 0; font-size: 13px; opacity: 1; }
