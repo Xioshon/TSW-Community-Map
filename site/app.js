@@ -51,6 +51,7 @@
     getJSON("data/walk.json", null),
   ]);
   const $ = (id) => document.getElementById(id);
+  const icon = (name) => `<svg class="ic" aria-hidden="true"><use href="#i-${name}"/></svg>`;
   const viewport = $("viewport"), stage = $("stage"), markers = $("markers");
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   // Every place opens a story card; places still waiting for a sticker show a "製作中" frame.
@@ -63,18 +64,6 @@
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private mode */ } },
   };
   let soundOn = store.get("tsw-sound", true);
-
-  // ---------- settings (⚙️ panel) ----------
-  const DEFAULTS = { gyro: false, motion: "full", trains: true, walk: true, quality: "auto" };
-  const settings = { ...DEFAULTS, ...store.get("tsw-settings", {}) };
-  const settingHooks = [];
-  const calm = () => reduceMotion || settings.motion === "less";
-  function setSetting(k, v) {
-    settings[k] = v; store.set("tsw-settings", settings);
-    document.body.classList.toggle("calm", calm());
-    settingHooks.forEach((fn) => fn(k, v));
-  }
-  document.body.classList.toggle("calm", calm());
 
   // What this device can do. Browsers do not reveal the phone model; everything here is decided
   // locally from capabilities and is never sent anywhere.
@@ -91,6 +80,19 @@
       needsPermission: !!D && typeof D.requestPermission === "function",
     };
   })();
+
+  // ---------- settings (gear panel) ----------
+  // Android (and others without a permission step) get the tilt straight away; iPhone asks first.
+  const DEFAULTS = { gyro: device.gyroOK && !device.needsPermission, motion: "full", trains: true, walk: true, quality: "auto" };
+  const settings = { ...DEFAULTS, ...store.get("tsw-settings", {}) };
+  const settingHooks = [];
+  const calm = () => reduceMotion || settings.motion === "less";
+  function setSetting(k, v) {
+    settings[k] = v; store.set("tsw-settings", settings);
+    document.body.classList.toggle("calm", calm());
+    settingHooks.forEach((fn) => fn(k, v));
+  }
+  document.body.classList.toggle("calm", calm());
   let ctx = null;
   const ac = () => (ctx = ctx || new (window.AudioContext || window.webkitAudioContext)());
   function note(freq, at, dur, { type = "triangle", gain = .14, cutoff = 2600 } = {}) {
@@ -490,7 +492,7 @@
       return { el, at: s.at * total };
     });
     const egg = document.querySelector(".title-card .egg");
-    if (egg) egg.textContent = `🏮 彩蛋：${walkData.date.slice(5).replace("-", ".")} 我哋嘅夜遊路線 · ${walkData.km} km`;
+    if (egg) egg.innerHTML = icon("lantern") + ` 彩蛋：${walkData.date.slice(5).replace("-", ".")} 我哋嘅夜遊路線 · ${walkData.km} km`;
     let on = false, raf = 0, t0 = 0, last = 0, pos = 0;
     const DRAW = 5200, STROLL = 55; // ms to draw the whole route; walker speed afterwards (map px/s)
     const ease = (t) => (t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
@@ -529,7 +531,7 @@
   const nightBtn = $("night");
   function setNight(on, withSound) {
     document.body.classList.toggle("night", on);
-    nightBtn.textContent = on ? "☀️" : "🌙";
+    nightBtn.innerHTML = icon(on ? "sun" : "moon");
     nightBtn.setAttribute("aria-pressed", on);
     nightBtn.setAttribute("aria-label", on ? "天光" : "入夜");
     if (withSound) play(on ? "night" : "day");
@@ -540,7 +542,7 @@
   setNight(store.get("tsw-night", false), false);
 
   const soundBtn = $("sound");
-  function setSound(on) { soundOn = on; soundBtn.textContent = on ? "🔈" : "🔇"; soundBtn.setAttribute("aria-pressed", on); store.set("tsw-sound", on); }
+  function setSound(on) { soundOn = on; soundBtn.innerHTML = icon(on ? "sound" : "mute"); soundBtn.setAttribute("aria-pressed", on); store.set("tsw-sound", on); }
   soundBtn.onclick = () => { setSound(!soundOn); play("soft"); };
   setSound(soundOn);
 
@@ -649,7 +651,7 @@
     { duration: 260, delay, easing: "ease-out", fill: "backwards" }));
 
   // Phones have no cursor to tilt the card sticker, so the gyroscope can do it — but only after the
-  // user has agreed in a short explanation (⚙️ settings, or the 📱 hint on the card).
+  // user has agreed (iPhone: a short note + the system prompt; Android: no permission step).
   const tilt = (() => {
     let base = null, live = false, listening = false, queued = false, last = null, readings = 0;
     const lim = (v) => Math.max(-20, Math.min(20, v));
@@ -674,7 +676,7 @@
       } catch { return "denied"; }
       listen();
       const before = readings;
-      await new Promise((r) => setTimeout(r, 1200));
+      await new Promise((r) => setTimeout(r, 900));
       return readings > before ? "ok" : "no-sensor";
     }
     return {
@@ -690,20 +692,30 @@
   })();
 
   // ---------- consent + settings panel ----------
-  const consent = $("consent");
+  const consent = $("consent"), toastEl = $("toast");
+  let toastTimer = 0;
+  function toast(msg, ms = 3200) {
+    toastEl.innerHTML = msg; toastEl.hidden = false;
+    toastEl.classList.remove("show"); void toastEl.offsetWidth; toastEl.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { toastEl.classList.remove("show"); setTimeout(() => (toastEl.hidden = true), 300); }, ms);
+  }
+  toastEl.addEventListener("click", () => { clearTimeout(toastTimer); toastEl.classList.remove("show"); setTimeout(() => (toastEl.hidden = true), 300); });
+  async function turnGyroOn() {
+    const r = await tilt.enable(); // inside the tap → iOS shows its own Allow / Cancel prompt
+    if (r === "ok") { setSetting("gyro", true); toast(`${icon("phone")} 已開啟：打開故事卡，搖吓手機啦`); return true; }
+    if (r === "denied") toast(`你揀咗唔允許，搖動效果維持關閉。<br>想再開：重新載入網頁，再喺右上角 ${icon("gear")} 設定開「搖動手機傾斜貼紙」。`, 7000);
+    else toast("呢部裝置讀唔到方向感應，搖動效果維持關閉。", 4500);
+    setSetting("gyro", false);
+    return false;
+  }
+  // No permission step (Android etc.): just switch it on. iPhone: a short note first, then the system prompt.
   function askGyro() {
+    if (!device.needsPermission) return turnGyroOn();
     return new Promise((done) => {
       consent.hidden = false;
-      $("consent-msg").textContent = "";
-      const finish = (v) => { consent.hidden = true; $("consent-yes").onclick = $("consent-no").onclick = null; done(v); };
-      $("consent-no").onclick = () => { play("soft"); finish(false); };
-      $("consent-yes").onclick = async () => {
-        play("pop");
-        const r = await tilt.enable(); // still inside the tap → iOS permission prompt
-        if (r === "ok") { setSetting("gyro", true); finish(true); return; }
-        $("consent-msg").textContent = r === "denied" ? "冇權限：可以喺瀏覽器設定入面允許「動作與方向」再試。" : "呢部裝置讀唔到陀螺儀資料，已保持關閉。";
-        setTimeout(() => finish(false), 2200);
-      };
+      const close = () => { consent.hidden = true; $("consent-yes").onclick = $("consent-no").onclick = null; };
+      $("consent-no").onclick = () => { play("soft"); close(); done(false); };
+      $("consent-yes").onclick = () => { play("pop"); close(); turnGyroOn().then(done); };
     });
   }
   const panel = $("settings-panel"), setBtn = $("settings");
@@ -712,9 +724,9 @@
     panel.querySelectorAll(".seg").forEach((g) => g.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", settings[g.dataset.k] === b.dataset.v)));
     const gyroBtn = panel.querySelector('[data-k="gyro"]');
     gyroBtn.disabled = !device.gyroOK;
-    $("gyro-note").textContent = device.gyroOK ? (settings.gyro ? "已開啟" : "需要你同意先會開") : "呢部裝置唔適用";
-    $("device-info").textContent = `${device.name} · ${device.browser} · 陀螺儀：${device.gyroOK ? (device.needsPermission ? "支援（要授權）" : "支援") : "不適用"}。網頁讀唔到手機型號，以上只喺本機判斷，唔會上傳。`;
-    $("card-tilt").hidden = !device.gyroOK || settings.gyro || store.get("tsw-tilt-hint", false);
+    $("gyro-note").textContent = !device.gyroOK ? "呢部裝置唔適用" : device.needsPermission && !settings.gyro ? "iPhone 需要授權" : "";
+    $("device-info").textContent = `${device.name} · ${device.browser} · 陀螺儀${device.gyroOK ? (device.needsPermission ? "（需授權）" : "可用") : "不適用"}`;
+    $("card-tilt").hidden = !device.gyroOK || !device.needsPermission || settings.gyro || store.get("tsw-tilt-hint", false);
   }
   panel.addEventListener("click", async (e) => {
     const b = e.target.closest("button");
@@ -804,6 +816,33 @@
       stampIfNew(p);
     });
   }
+  // Swipe the card sideways to flip to the previous / next place (follows the finger, springs back).
+  let swipe = null, swallowClick = false;
+  card.addEventListener("pointerdown", (e) => { if (!busy && e.isPrimary) swipe = { x: e.clientX, y: e.clientY, dx: 0, on: false }; });
+  card.addEventListener("pointermove", (e) => {
+    if (!swipe || !e.isPrimary) return;
+    const dx = e.clientX - swipe.x, dy = e.clientY - swipe.y;
+    if (!swipe.on) { if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { swipe = null; return; } if (Math.abs(dx) < 10) return; swipe.on = true; }
+    const i = real.indexOf(current), edge = (dx > 0 && i <= 0) || (dx < 0 && i >= real.length - 1);
+    swipe.dx = edge ? dx * .3 : dx; // resist at the first / last card
+    card.style.translate = `${swipe.dx.toFixed(1)}px 0`;
+    card.style.rotate = `${(swipe.dx / 40).toFixed(2)}deg`;
+  });
+  const endSwipe = () => {
+    if (!swipe) return;
+    const { dx, on } = swipe; swipe = null;
+    if (!on) return;
+    swallowClick = true; setTimeout(() => (swallowClick = false), 50);
+    const i = real.indexOf(current), from = card.style.translate || "0 0", rot = card.style.rotate || "0deg";
+    card.style.translate = card.style.rotate = "";
+    if (dx < -60 && i < real.length - 1) switchTo(real[i + 1], 1);
+    else if (dx > 60 && i > 0) switchTo(real[i - 1], -1);
+    else card.animate([{ translate: from, rotate: rot }, { translate: "0 0", rotate: "0deg" }], { duration: 320, easing: EASE_OUT });
+  };
+  card.addEventListener("pointerup", endSwipe);
+  card.addEventListener("pointercancel", endSwipe);
+  card.addEventListener("click", (e) => { if (swallowClick) { e.stopPropagation(); e.preventDefault(); } }, true);
+
   $("card-close").onclick = closeCard;
   $("card-prev").onclick = () => { const i = real.indexOf(current); if (i > 0) switchTo(real[i - 1], -1); };
   $("card-next").onclick = () => { const i = real.indexOf(current); if (i < real.length - 1) switchTo(real[i + 1], 1); };
@@ -822,6 +861,6 @@
   });
   art.addEventListener("pointerleave", () => ["--rx", "--ry", "--sx"].forEach((v) => sticker.style.removeProperty(v)));
   // Text and pictures can't be selected, dragged out or right-clicked.
-  ["contextmenu", "dragstart", "selectstart"].forEach((t) => addEventListener(t, (e) => e.preventDefault()));
+  ["contextmenu", "dragstart", "selectstart", "gesturestart", "dblclick"].forEach((t) => addEventListener(t, (e) => e.preventDefault()));
   loader.finish();
 })();

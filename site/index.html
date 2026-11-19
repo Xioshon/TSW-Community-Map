@@ -2,15 +2,16 @@
 <html lang="zh-Hant-HK">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>夜遊「圍」園</title>
 <meta name="description" content="一張手作拼貼風格的天水圍社區地圖">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=21">
+<link rel="stylesheet" href="style.css?v=22">
 </head>
 <body class="loading">
+<svg xmlns="http://www.w3.org/2000/svg" class="sprite" aria-hidden="true"><defs><symbol id="i-moon" viewBox="0 0 24 24"><path style="fill:var(--ic-moon)" d="M14.8 3.2a8.6 8.6 0 1 0 6 14.2A7.2 7.2 0 0 1 14.8 3.2z"/><path style="fill:var(--ic-sun)" stroke-width="1.1" d="M18 5.6l.55 1.25 1.25.55-1.25.55L18 9.2l-.55-1.25-1.25-.55 1.25-.55z"/></symbol><symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.6" style="fill:var(--ic-sun)"/><path d="M12 2.7v2.2M12 19.1v2.2M2.7 12h2.2M19.1 12h2.2M5.4 5.4l1.5 1.5M17.1 17.1l1.5 1.5M5.4 18.6l1.5-1.5M17.1 6.9l1.5-1.5"/></symbol><symbol id="i-sound" viewBox="0 0 24 24"><path style="fill:var(--ic-cream)" d="M3.8 9.4h3.4l4.9-4v13.2l-4.9-4H3.8z"/><path d="M15.4 9.2a3.9 3.9 0 0 1 0 5.6M18 6.6a7.6 7.6 0 0 1 0 10.8"/></symbol><symbol id="i-mute" viewBox="0 0 24 24"><path style="fill:var(--ic-cream)" d="M3.8 9.4h3.4l4.9-4v13.2l-4.9-4H3.8z"/><path d="M15.6 9.6l4.8 4.8M20.4 9.6l-4.8 4.8"/></symbol><symbol id="i-gear" viewBox="0 0 24 24"><path style="fill:var(--ic-cream)" d="M18.80 10.34 L21.49 10.57 L21.49 13.43 L18.80 13.66 L17.98 15.63 L19.73 17.70 L17.70 19.73 L15.63 17.98 L13.66 18.80 L13.43 21.49 L10.57 21.49 L10.34 18.80 L8.37 17.98 L6.30 19.73 L4.27 17.70 L6.02 15.63 L5.20 13.66 L2.51 13.43 L2.51 10.57 L5.20 10.34 L6.02 8.37 L4.27 6.30 L6.30 4.27 L8.37 6.02 L10.34 5.20 L10.57 2.51 L13.43 2.51 L13.66 5.20 L15.63 6.02 L17.70 4.27 L19.73 6.30 L17.98 8.37Z"/><circle cx="12" cy="12" r="2.9" style="fill:var(--ic-sun)"/></symbol><symbol id="i-stamp" viewBox="0 0 24 24"><path style="fill:var(--ic-cream)" d="M9.6 3.4h4.8a1.6 1.6 0 0 1 1.6 1.7c-.2 2.1-2 3.1-2 5.4h-4c0-2.3-1.8-3.3-2-5.4a1.6 1.6 0 0 1 1.6-1.7z"/><rect x="4.6" y="10.5" width="14.8" height="4.6" rx="1.4" style="fill:var(--ic-red)"/><path d="M6.2 18.8h11.6"/></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5.4v13.2M5.4 12h13.2"/></symbol><symbol id="i-minus" viewBox="0 0 24 24"><path d="M5.4 12h13.2"/></symbol><symbol id="i-home" viewBox="0 0 24 24"><path style="fill:var(--ic-cream)" d="M4.4 11.4L12 4.7l7.6 6.7v8.1h-5v-5h-5.2v5h-5z"/></symbol><symbol id="i-close" viewBox="0 0 24 24"><path d="M6.6 6.6l10.8 10.8M17.4 6.6L6.6 17.4"/></symbol><symbol id="i-left" viewBox="0 0 24 24"><path d="M14.6 5.6L8.2 12l6.4 6.4"/></symbol><symbol id="i-right" viewBox="0 0 24 24"><path d="M9.4 5.6l6.4 6.4-6.4 6.4"/></symbol><symbol id="i-phone" viewBox="0 0 24 24"><rect x="7.6" y="3.2" width="8.8" height="17.6" rx="2.2" style="fill:var(--ic-cream)"/><path d="M10.7 17.6h2.6M3.8 9.3c-.9 1.8-.9 3.6 0 5.4M20.2 9.3c.9 1.8.9 3.6 0 5.4"/></symbol><symbol id="i-lantern" viewBox="0 0 24 24"><path d="M12 2.3v2.1"/><rect x="8.7" y="4.4" width="6.6" height="2" rx=".8" style="fill:var(--ic-sun)"/><ellipse cx="12" cy="11.6" rx="6.4" ry="5.3" style="fill:var(--ic-red)"/><path stroke-width="1.2" d="M12 6.3c-2.1 1.6-2.1 9 0 10.6M12 6.3c2.1 1.6 2.1 9 0 10.6"/><rect x="8.7" y="16.8" width="6.6" height="2" rx=".8" style="fill:var(--ic-sun)"/><path d="M12 18.8v2.9"/></symbol><symbol id="i-speaker" viewBox="0 0 24 24"><path style="fill:var(--ic-cream)" d="M3.8 9.4h3.4l4.9-4v13.2l-4.9-4H3.8z"/><path d="M15.4 9.2a3.9 3.9 0 0 1 0 5.6"/></symbol></defs></svg>
 <div id="loader" role="status" aria-live="polite">
   <div class="loader-card">
     <span class="tape tape-a"></span>
@@ -28,10 +29,10 @@
 </header>
 
 <div class="top-right">
-  <button id="stamps" class="chip" aria-label="已收集印仔">🔖 <span id="stamp-count">0/0</span></button>
-  <button id="night" class="round" aria-pressed="false" aria-label="入夜">🌙</button>
-  <button id="sound" class="round" aria-pressed="true" aria-label="音效">🔈</button>
-  <button id="settings" class="round" aria-expanded="false" aria-controls="settings-panel" aria-label="設定">⚙️</button>
+  <button id="stamps" class="chip" aria-label="已收集印仔"><svg class="ic" aria-hidden="true"><use href="#i-stamp"/></svg> <span id="stamp-count">0/0</span></button>
+  <button id="night" class="round" aria-pressed="false" aria-label="入夜"><svg class="ic" aria-hidden="true"><use href="#i-moon"/></svg></button>
+  <button id="sound" class="round" aria-pressed="true" aria-label="音效"><svg class="ic" aria-hidden="true"><use href="#i-sound"/></svg></button>
+  <button id="settings" class="round" aria-expanded="false" aria-controls="settings-panel" aria-label="設定"><svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg></button>
 </div>
 
 <div id="settings-panel" role="dialog" aria-label="設定" hidden>
@@ -45,17 +46,17 @@
   <p id="device-info" class="device"></p>
 </div>
 
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
 <div id="consent" role="dialog" aria-modal="true" aria-labelledby="consent-title" hidden>
   <div class="consent-card">
-    <h3 id="consent-title">📱 開啟搖動效果？</h3>
-    <p>開啟後，打開故事卡時搖動手機，貼紙會跟住傾斜，好似真貼紙咁有立體感。</p>
+    <h3 id="consent-title"><svg class="ic" aria-hidden="true"><use href="#i-phone"/></svg> 開啟搖動效果？</h3>
+    <p>打開故事卡時搖動手機，貼紙會跟住傾斜，好似真貼紙咁有立體感。</p>
     <ul>
-      <li>只會讀取手機嘅方向感應，用嚟郁動畫面上嘅貼紙。</li>
-      <li>資料只喺你部手機入面處理，唔會儲存、唔會上傳。</li>
-      <li>iPhone 會再彈出系統提示問你准唔准；隨時可以喺 ⚙️ 設定關返。</li>
-      <li>部分裝置可能會略為多啲耗電。</li>
+      <li>iPhone 要你授權先可以讀方向感應：撳「開啟」後，請喺系統視窗揀<b>「允許」</b>。</li>
+      <li>資料只喺手機入面用嚟郁貼紙，唔會儲存或上傳。</li>
+      <li>隨時可以喺右上角設定關返。</li>
     </ul>
-    <p id="consent-msg" class="consent-msg"></p>
     <div class="consent-actions"><button id="consent-no" class="chip">唔使喇</button><button id="consent-yes" class="chip primary">開啟</button></div>
   </div>
 </div>
@@ -76,17 +77,17 @@
 <nav id="filters" aria-label="分類"></nav>
 
 <nav class="zoom" aria-label="地圖縮放">
-  <button id="zoom-in" class="round" aria-label="放大">＋</button>
-  <button id="zoom-out" class="round" aria-label="縮小">－</button>
-  <button id="zoom-reset" class="round" aria-label="回到起點">⟲</button>
+  <button id="zoom-in" class="round" aria-label="放大"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg></button>
+  <button id="zoom-out" class="round" aria-label="縮小"><svg class="ic" aria-hidden="true"><use href="#i-minus"/></svg></button>
+  <button id="zoom-reset" class="round" aria-label="回到起點"><svg class="ic" aria-hidden="true"><use href="#i-home"/></svg></button>
 </nav>
 
 <div id="card-layer" hidden>
   <div id="card-backdrop"></div>
   <article id="card" role="dialog" aria-modal="true" aria-labelledby="card-title">
     <span class="tape tape-b"></span>
-    <button id="card-close" aria-label="關閉">✕</button>
-    <button id="card-tilt" class="chip" hidden>📱 搖一搖</button>
+    <button id="card-close" aria-label="關閉"><svg class="ic" aria-hidden="true"><use href="#i-close"/></svg></button>
+    <button id="card-tilt" class="chip" hidden><svg class="ic" aria-hidden="true"><use href="#i-phone"/></svg> 搖一搖</button>
     <div id="card-art"><img id="card-sticker" alt=""></div>
     <div id="card-stamp" aria-hidden="true">到此<br>一遊</div>
     <h2 id="card-title"></h2>
@@ -95,13 +96,13 @@
     <ul id="card-tags"></ul>
     <p id="card-text"></p>
     <div class="card-actions">
-      <button id="card-prev" aria-label="上一個">‹</button>
-      <button id="card-sound" disabled>🔊 聲效製作中</button>
-      <button id="card-next" aria-label="下一個">›</button>
+      <button id="card-prev" aria-label="上一個"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button>
+      <button id="card-sound" disabled><svg class="ic" aria-hidden="true"><use href="#i-speaker"/></svg> 聲效製作中</button>
+      <button id="card-next" aria-label="下一個"><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button>
     </div>
   </article>
 </div>
 
-<script src="app.js?v=21"></script>
+<script src="app.js?v=22"></script>
 </body>
 </html>
