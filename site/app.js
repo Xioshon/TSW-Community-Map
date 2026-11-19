@@ -194,6 +194,25 @@
     });
     filters.append(b);
   });
+  // On narrow screens the chips scroll sideways: fade the edges that have more, add a tappable arrow,
+  // and nudge once so people discover it.
+  const more = $("filters-more");
+  function filterEdges() {
+    const max = filters.scrollWidth - filters.clientWidth;
+    const left = filters.scrollLeft > 4, right = filters.scrollLeft < max - 4;
+    filters.classList.toggle("more-left", left);
+    filters.classList.toggle("more-right", right);
+    more.hidden = !right;
+  }
+  filters.addEventListener("scroll", filterEdges, { passive: true });
+  addEventListener("resize", filterEdges);
+  more.innerHTML = icon("right");
+  more.onclick = () => { play("soft"); filters.scrollBy({ left: filters.clientWidth * .7, behavior: "smooth" }); };
+  filterEdges();
+  if (filters.scrollWidth > filters.clientWidth + 4 && !store.get("tsw-chips-nudged", false)) {
+    store.set("tsw-chips-nudged", true);
+    setTimeout(() => { filters.scrollBy({ left: 56, behavior: "smooth" }); setTimeout(() => filters.scrollBy({ left: -56, behavior: "smooth" }), 650); }, 2600);
+  }
 
   // ---------- stamps ----------
   const renderStamps = () => { $("stamp-count").textContent = `${real.filter((p) => visited.has(p.id)).length}/${real.length}`; };

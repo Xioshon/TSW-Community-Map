@@ -470,3 +470,17 @@ html, body, button, .chip, .round, #card, #settings-panel, #consent { touch-acti
 }
 #toast.show { opacity: 1; translate: -50% 0; }
 #toast .ic { width: 18px; height: 18px; }
+
+/* ---------- category chips: edge fades + a "more" arrow when they don't all fit ---------- */
+#filters { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+#filters.more-right { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 44px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 44px), transparent); }
+#filters.more-left { -webkit-mask-image: linear-gradient(90deg, transparent, #000 32px); mask-image: linear-gradient(90deg, transparent, #000 32px); }
+#filters.more-left.more-right { -webkit-mask-image: linear-gradient(90deg, transparent, #000 32px, #000 calc(100% - 44px), transparent); mask-image: linear-gradient(90deg, transparent, #000 32px, #000 calc(100% - 44px), transparent); }
+#filters-more {
+  position: fixed; z-index: 11; right: 76px; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 6px);
+  width: 34px; height: 34px; animation: more-hint 1.6s ease-in-out infinite;
+}
+#filters-more .ic { width: 18px; height: 18px; }
+#filters-more[hidden] { display: none; }
+@keyframes more-hint { 0%, 100% { translate: 0 0; } 50% { translate: 4px 0; } }
+.calm #filters-more { animation: none; }
