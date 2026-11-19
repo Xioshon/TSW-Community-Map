@@ -63,6 +63,34 @@
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private mode */ } },
   };
   let soundOn = store.get("tsw-sound", true);
+
+  // ---------- settings (⚙️ panel) ----------
+  const DEFAULTS = { gyro: false, motion: "full", trains: true, walk: true, quality: "auto" };
+  const settings = { ...DEFAULTS, ...store.get("tsw-settings", {}) };
+  const settingHooks = [];
+  const calm = () => reduceMotion || settings.motion === "less";
+  function setSetting(k, v) {
+    settings[k] = v; store.set("tsw-settings", settings);
+    document.body.classList.toggle("calm", calm());
+    settingHooks.forEach((fn) => fn(k, v));
+  }
+  document.body.classList.toggle("calm", calm());
+
+  // What this device can do. Browsers do not reveal the phone model; everything here is decided
+  // locally from capabilities and is never sent anywhere.
+  const device = (() => {
+    const ua = navigator.userAgent;
+    const ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const android = /Android/.test(ua);
+    const touch = matchMedia("(hover: none) and (pointer: coarse)").matches;
+    const D = window.DeviceOrientationEvent;
+    return {
+      name: ios ? (/iPhone/.test(ua) ? "iPhone" : "iPad") : android ? "Android 裝置" : touch ? "觸控裝置" : "電腦",
+      browser: /CriOS/.test(ua) ? "Chrome" : /FxiOS/.test(ua) ? "Firefox" : /EdgiOS|Edg\//.test(ua) ? "Edge" : /SamsungBrowser/.test(ua) ? "Samsung Internet" : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : "瀏覽器",
+      gyroOK: touch && !!D && window.isSecureContext,
+      needsPermission: !!D && typeof D.requestPermission === "function",
+    };
+  })();
   let ctx = null;
   const ac = () => (ctx = ctx || new (window.AudioContext || window.webkitAudioContext)());
   function note(freq, at, dur, { type = "triangle", gain = .14, cutoff = 2600 } = {}) {
@@ -197,8 +225,9 @@
   let tileTimer = 0;
   function updateTiles() {
     tileTimer = 0;
-    const [vw, vh] = vwh(), need = z * Math.min(window.devicePixelRatio || 1, 3);
-    const level = need <= .55 ? 0 : LEVELS.find((l) => l >= need * .85) || LEVELS[LEVELS.length - 1];
+    const saver = settings.quality === "saver", top = saver ? 2 : 3;
+    const [vw, vh] = vwh(), need = z * Math.min(window.devicePixelRatio || 1, saver ? 1.5 : 3);
+    const level = need <= .55 ? 0 : Math.min(top, LEVELS.find((l) => l >= need * .85) || top);
     const want = new Set();
     if (level) {
       const pad = 200, cols = Math.ceil((map.width * level) / TILE), rows = Math.ceil((map.height * level) / TILE);
@@ -411,7 +440,7 @@
     const total = cum[cum.length - 1];
     let hint = 1;
     return {
-      total,
+      total, pts, cum,
       at(L) {
         L = ((L % total) + total) % total;
         if (cum[hint - 1] > L || cum[hint] < L) { let lo = 1, hi = cum.length - 1; while (lo < hi) { const mid = (lo + hi) >> 1; if (cum[mid] < L) lo = mid + 1; else hi = mid; } hint = lo; }
@@ -424,18 +453,30 @@
   // ---------- night walk (easter egg): the team's 2026-11-06 route, drawn when night falls ----------
   const walk = (() => {
     if (!walkData || !walkData.legs.length) return { set() {} };
-    const NSW = "http://www.w3.org/2000/svg", svg = $("walk");
+    const svg = $("walk");
     svg.setAttribute("viewBox", `0 0 ${map.width} ${map.height}`);
     const pts = walkData.legs.flatMap((l, i) => (i ? l.pts.slice(1) : l.pts));
-    const dOf = (ps) => "M" + ps.map((p) => p.join(",")).join(" L");
-    const road = walkData.legs.filter((l) => !l.tunnel).map((l) => dOf(l.pts)).join(" ");
-    const tunnel = walkData.legs.filter((l) => l.tunnel).map((l) => dOf(l.pts)).join(" ");
-    svg.innerHTML = `<defs><mask id="walk-reveal" maskUnits="userSpaceOnUse" x="0" y="0" width="${map.width}" height="${map.height}">
-        <path class="walk-mask" d="${dOf(pts)}"/></mask></defs>
-      <g mask="url(#walk-reveal)"><path class="walk-glow" d="${road}"/><path class="walk-line" d="${road}"/><path class="walk-tunnel" d="${tunnel}"/></g>`;
-    const mask = svg.querySelector(".walk-mask"), maskG = svg.querySelector("g[mask]"), dot = $("walk-dot"), line = polyline(pts);
-    const total = line.total;
-    mask.style.strokeDasharray = `${total} ${total}`;
+    const dot = $("walk-dot"), line = polyline(pts), total = line.total;
+    // The route is cut into ~36 px pieces; "drawing" it just switches pieces on, which repaints a
+    // few pixels per frame instead of re-masking the whole route (that stuttered on iPhone).
+    const CH = 36, starts = [];
+    let html = "", s0 = 0;
+    for (const leg of walkData.legs) {
+      const pl = polyline(leg.pts);
+      for (let a = 0; a < pl.total - .01; a += CH) {
+        const b = Math.min(pl.total - 1e-3, a + CH), q = [pl.at(a)];
+        for (let i = 1; i < pl.cum.length - 1; i++) if (pl.cum[i] > a && pl.cum[i] < b) q.push({ x: pl.pts[i][0], y: pl.pts[i][1] });
+        q.push(pl.at(b));
+        const d = "M" + q.map((p) => p.x.toFixed(1) + "," + p.y.toFixed(1)).join(" L"), off = `style="stroke-dashoffset:${(-(s0 + a)).toFixed(1)}"`;
+        html += leg.tunnel ? `<g class="pc"><path class="walk-tunnel" d="${d}" ${off}/></g>`
+          : `<g class="pc"><path class="walk-glow" d="${d}"/><path class="walk-line" d="${d}" ${off}/></g>`;
+        starts.push(s0 + a);
+      }
+      s0 += pl.total;
+    }
+    svg.innerHTML = html;
+    const pieces = [...svg.children];
+    let shown = 0;
     // memo-paper stops (HTML, so they keep a readable size at any zoom like the stickers)
     const stops = walkData.stops.map((s, i) => {
       // where a sticker already marks the stop, only a small numbered badge is shown (no clutter)
@@ -450,7 +491,7 @@
     });
     const egg = document.querySelector(".title-card .egg");
     if (egg) egg.textContent = `🏮 彩蛋：${walkData.date.slice(5).replace("-", ".")} 我哋嘅夜遊路線 · ${walkData.km} km`;
-    let on = false, raf = 0, t0 = 0, last = 0, pos = 0, frameNo = 0;
+    let on = false, raf = 0, t0 = 0, last = 0, pos = 0;
     const DRAW = 5200, STROLL = 55; // ms to draw the whole route; walker speed afterwards (map px/s)
     const ease = (t) => (t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
     function place(L) {
@@ -458,25 +499,27 @@
       dot.style.transform = `translate3d(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px, 0)`;
     }
     function reveal(L) {
-      mask.style.strokeDashoffset = total - L;
+      if (L < (starts[shown - 1] ?? -1)) { pieces.forEach((p) => p.classList.remove("on")); shown = 0; }
+      while (shown < pieces.length && starts[shown] <= L) pieces[shown++].classList.add("on");
       stops.forEach((s) => s.el.classList.toggle("show", on && L >= s.at - 1));
     }
     function frame(now) {
       if (!on) return;
       const k = Math.min(1, (now - t0) / DRAW);
-      if (k < 1) { pos = ease(k) * total; if ((frameNo++ & 1) === 0) reveal(pos); }
-      else { if (!last) { reveal(total); maskG.removeAttribute("mask"); last = now; } pos = (pos + STROLL * Math.min(.1, (now - last) / 1000)) % total; last = now; }
+      if (k < 1) { pos = ease(k) * total; reveal(pos); }
+      else { if (!last) { reveal(total); last = now; } pos = (pos + STROLL * Math.min(.1, (now - last) / 1000)) % total; last = now; }
       place(pos);
       raf = requestAnimationFrame(frame);
     }
     return {
       set(v) {
+        v = v && settings.walk;
         on = v; cancelAnimationFrame(raf);
         svg.classList.toggle("on", v); dot.classList.toggle("on", v);
         if (!v) { stops.forEach((s) => s.el.classList.remove("show")); return; }
-        if (reduceMotion) { reveal(total); place(0); return; }
-        maskG.setAttribute("mask", "url(#walk-reveal)");
-        reveal(0); pos = 0; last = 0; t0 = performance.now();
+        if (calm()) { reveal(total); place(0); return; }
+        shown = pieces.length; reveal(-1); // reset, then draw from the start
+        pos = 0; last = 0; t0 = performance.now();
         raf = requestAnimationFrame(frame);
       },
     };
@@ -492,6 +535,7 @@
     if (withSound) play(on ? "night" : "day");
     walk.set(on);
   }
+  settingHooks.push((k) => { if (k === "walk" || k === "motion") walk.set(document.body.classList.contains("night")); });
   nightBtn.onclick = () => { const on = !document.body.classList.contains("night"); setNight(on, true); store.set("tsw-night", on); };
   setNight(store.get("tsw-night", false), false);
 
@@ -533,13 +577,20 @@
       el.style.transform = `translate3d(${(p.x - 14).toFixed(1)}px, ${(p.y - 8).toFixed(1)}px, 0) rotate(${(p.deg + (t.dir < 0 ? 180 : 0)).toFixed(1)}deg) scale(${s.toFixed(2)})`;
     });
   }
+  let trainRaf = 0;
   function tick(now) {
     const dt = Math.min(.1, (now - prev) / 1000); prev = now;
     for (const t of trains) { t.pos = wrap(t.pos + (t.dir * SPEED * dt) / t.len, 1); placeTrain(t); }
-    requestAnimationFrame(tick);
+    trainRaf = requestAnimationFrame(tick);
   }
-  trains.forEach(placeTrain);
-  if (!reduceMotion && trains.length) requestAnimationFrame(tick);
+  function runTrains() {
+    cancelAnimationFrame(trainRaf);
+    rails.style.display = settings.trains ? "" : "none";
+    trains.forEach(placeTrain);
+    if (settings.trains && !calm() && trains.length) { prev = performance.now(); trainRaf = requestAnimationFrame(tick); }
+  }
+  settingHooks.push((k) => { if (k === "trains" || k === "motion") runTrains(); if (k === "quality") updateTiles(); });
+  runTrains();
 
   // ---------- story card ----------
   const layer = $("card-layer"), backdrop = $("card-backdrop"), card = $("card"), art = $("card-art"),
@@ -597,10 +648,10 @@
   const bitsIn = (delay) => cardBits().forEach((el) => el.animate([{ opacity: 0, translate: "0 8px" }, { opacity: 1, translate: "0 0" }],
     { duration: 260, delay, easing: "ease-out", fill: "backwards" }));
 
-  // Phones have no cursor to tilt the card sticker, so the gyroscope does it (iOS asks once, on the first tap).
+  // Phones have no cursor to tilt the card sticker, so the gyroscope can do it — but only after the
+  // user has agreed in a short explanation (⚙️ settings, or the 📱 hint on the card).
   const tilt = (() => {
-    const touch = matchMedia("(hover: none)").matches;
-    let base = null, live = false, asked = false, queued = false, last = null;
+    let base = null, live = false, listening = false, queued = false, last = null, readings = 0;
     const lim = (v) => Math.max(-20, Math.min(20, v));
     function apply() {
       queued = false;
@@ -612,20 +663,79 @@
       sticker.style.setProperty("--rx", rx.toFixed(1) + "deg");
       sticker.style.setProperty("--sx", (-ry * .6).toFixed(1) + "px");
     }
-    function onTurn(e) { if (e.beta == null) return; last = [e.beta, e.gamma]; if (!queued) { queued = true; requestAnimationFrame(apply); } }
-    return {
-      start() {
-        if (!touch || reduceMotion || !window.DeviceOrientationEvent) return;
-        base = null; live = true;
-        if (asked) return;
-        asked = true;
+    function onTurn(e) { if (e.beta == null) return; readings++; last = [e.beta, e.gamma]; if (live && !queued) { queued = true; requestAnimationFrame(apply); } }
+    const listen = () => { if (!listening) { listening = true; addEventListener("deviceorientation", onTurn); } };
+    // Ask the browser (iOS shows its own prompt; must run inside a tap), then check readings really arrive.
+    async function enable() {
+      if (!device.gyroOK) return "unsupported";
+      try {
         const D = window.DeviceOrientationEvent;
-        if (typeof D.requestPermission === "function") D.requestPermission().then((s) => { if (s === "granted") addEventListener("deviceorientation", onTurn); }).catch(() => {});
-        else addEventListener("deviceorientation", onTurn);
+        if (device.needsPermission && (await D.requestPermission()) !== "granted") return "denied";
+      } catch { return "denied"; }
+      listen();
+      const before = readings;
+      await new Promise((r) => setTimeout(r, 1200));
+      return readings > before ? "ok" : "no-sensor";
+    }
+    return {
+      enable,
+      start() {
+        if (!settings.gyro || !device.gyroOK || calm()) return;
+        base = null; live = true;
+        // iOS forgets the grant between visits; asking again inside this tap is silent once allowed
+        if (!listening) (device.needsPermission ? window.DeviceOrientationEvent.requestPermission().then((r) => r === "granted" && listen()).catch(() => {}) : listen());
       },
       stop() { live = false; ["--rx", "--ry", "--sx"].forEach((v) => sticker.style.removeProperty(v)); },
     };
   })();
+
+  // ---------- consent + settings panel ----------
+  const consent = $("consent");
+  function askGyro() {
+    return new Promise((done) => {
+      consent.hidden = false;
+      $("consent-msg").textContent = "";
+      const finish = (v) => { consent.hidden = true; $("consent-yes").onclick = $("consent-no").onclick = null; done(v); };
+      $("consent-no").onclick = () => { play("soft"); finish(false); };
+      $("consent-yes").onclick = async () => {
+        play("pop");
+        const r = await tilt.enable(); // still inside the tap → iOS permission prompt
+        if (r === "ok") { setSetting("gyro", true); finish(true); return; }
+        $("consent-msg").textContent = r === "denied" ? "冇權限：可以喺瀏覽器設定入面允許「動作與方向」再試。" : "呢部裝置讀唔到陀螺儀資料，已保持關閉。";
+        setTimeout(() => finish(false), 2200);
+      };
+    });
+  }
+  const panel = $("settings-panel"), setBtn = $("settings");
+  function syncPanel() {
+    panel.querySelectorAll(".switch").forEach((b) => b.setAttribute("aria-pressed", !!settings[b.dataset.k]));
+    panel.querySelectorAll(".seg").forEach((g) => g.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", settings[g.dataset.k] === b.dataset.v)));
+    const gyroBtn = panel.querySelector('[data-k="gyro"]');
+    gyroBtn.disabled = !device.gyroOK;
+    $("gyro-note").textContent = device.gyroOK ? (settings.gyro ? "已開啟" : "需要你同意先會開") : "呢部裝置唔適用";
+    $("device-info").textContent = `${device.name} · ${device.browser} · 陀螺儀：${device.gyroOK ? (device.needsPermission ? "支援（要授權）" : "支援") : "不適用"}。網頁讀唔到手機型號，以上只喺本機判斷，唔會上傳。`;
+    $("card-tilt").hidden = !device.gyroOK || settings.gyro || store.get("tsw-tilt-hint", false);
+  }
+  panel.addEventListener("click", async (e) => {
+    const b = e.target.closest("button");
+    if (!b || b.disabled) return;
+    if (b.classList.contains("switch")) {
+      const k = b.dataset.k;
+      if (k === "gyro" && !settings.gyro) await askGyro(); else { play("soft"); setSetting(k, !settings[k]); }
+    } else if (b.parentElement.classList.contains("seg")) { play("soft"); setSetting(b.parentElement.dataset.k, b.dataset.v); }
+    else if (b.id === "reset-stamps") {
+      if (!b.dataset.armed) { b.dataset.armed = "1"; b.textContent = "再撳一次確認"; setTimeout(() => { delete b.dataset.armed; b.textContent = "清除"; }, 3000); return; }
+      visited.clear(); store.set("tsw-stamps", []); markerEls.forEach((m) => m.classList.remove("visited")); renderStamps();
+      delete b.dataset.armed; b.textContent = "已清除";
+    }
+    syncPanel();
+  });
+  setBtn.onclick = (e) => { e.stopPropagation(); play("soft"); panel.hidden = !panel.hidden; setBtn.setAttribute("aria-expanded", !panel.hidden); syncPanel(); };
+  addEventListener("pointerdown", (e) => { if (!panel.hidden && !panel.contains(e.target) && e.target !== setBtn) { panel.hidden = true; setBtn.setAttribute("aria-expanded", false); } });
+  addEventListener("keydown", (e) => { if (e.key === "Escape" && !panel.hidden) panel.hidden = true; });
+  $("card-tilt").onclick = async () => { store.set("tsw-tilt-hint", true); if (await askGyro()) tilt.start(); syncPanel(); };
+  settingHooks.push(syncPanel);
+  syncPanel();
 
   async function openCard(p) {
     if (busy || !layer.hidden) return;
@@ -711,5 +821,7 @@
     sticker.style.setProperty("--sx", (-px * 14).toFixed(1) + "px");
   });
   art.addEventListener("pointerleave", () => ["--rx", "--ry", "--sx"].forEach((v) => sticker.style.removeProperty(v)));
+  // Text and pictures can't be selected, dragged out or right-clicked.
+  ["contextmenu", "dragstart", "selectstart"].forEach((t) => addEventListener(t, (e) => e.preventDefault()));
   loader.finish();
 })();

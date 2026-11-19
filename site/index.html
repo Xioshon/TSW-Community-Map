@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=19">
+<link rel="stylesheet" href="style.css?v=21">
 </head>
 <body class="loading">
 <div id="loader" role="status" aria-live="polite">
@@ -31,6 +31,33 @@
   <button id="stamps" class="chip" aria-label="已收集印仔">🔖 <span id="stamp-count">0/0</span></button>
   <button id="night" class="round" aria-pressed="false" aria-label="入夜">🌙</button>
   <button id="sound" class="round" aria-pressed="true" aria-label="音效">🔈</button>
+  <button id="settings" class="round" aria-expanded="false" aria-controls="settings-panel" aria-label="設定">⚙️</button>
+</div>
+
+<div id="settings-panel" role="dialog" aria-label="設定" hidden>
+  <h3>設定</h3>
+  <div class="set-row"><span>動畫效果</span><div class="seg" data-k="motion"><button data-v="full">完整</button><button data-v="less">減少</button></div></div>
+  <div class="set-row"><span>輕鐵列車</span><button class="switch" data-k="trains" aria-label="輕鐵列車"></button></div>
+  <div class="set-row"><span>夜遊路線<small>入夜先會出現</small></span><button class="switch" data-k="walk" aria-label="夜遊路線"></button></div>
+  <div class="set-row"><span>地圖清晰度<small>省電：放大時少啲細節</small></span><div class="seg" data-k="quality"><button data-v="auto">自動</button><button data-v="saver">省電</button></div></div>
+  <div class="set-row"><span>搖動手機傾斜貼紙<small id="gyro-note"></small></span><button class="switch" data-k="gyro" aria-label="陀螺儀"></button></div>
+  <div class="set-row"><span>印仔紀錄</span><button id="reset-stamps" class="chip">清除</button></div>
+  <p id="device-info" class="device"></p>
+</div>
+
+<div id="consent" role="dialog" aria-modal="true" aria-labelledby="consent-title" hidden>
+  <div class="consent-card">
+    <h3 id="consent-title">📱 開啟搖動效果？</h3>
+    <p>開啟後，打開故事卡時搖動手機，貼紙會跟住傾斜，好似真貼紙咁有立體感。</p>
+    <ul>
+      <li>只會讀取手機嘅方向感應，用嚟郁動畫面上嘅貼紙。</li>
+      <li>資料只喺你部手機入面處理，唔會儲存、唔會上傳。</li>
+      <li>iPhone 會再彈出系統提示問你准唔准；隨時可以喺 ⚙️ 設定關返。</li>
+      <li>部分裝置可能會略為多啲耗電。</li>
+    </ul>
+    <p id="consent-msg" class="consent-msg"></p>
+    <div class="consent-actions"><button id="consent-no" class="chip">唔使喇</button><button id="consent-yes" class="chip primary">開啟</button></div>
+  </div>
 </div>
 
 <main id="viewport" aria-label="天水圍地圖，可以拖動同縮放">
@@ -59,6 +86,7 @@
   <article id="card" role="dialog" aria-modal="true" aria-labelledby="card-title">
     <span class="tape tape-b"></span>
     <button id="card-close" aria-label="關閉">✕</button>
+    <button id="card-tilt" class="chip" hidden>📱 搖一搖</button>
     <div id="card-art"><img id="card-sticker" alt=""></div>
     <div id="card-stamp" aria-hidden="true">到此<br>一遊</div>
     <h2 id="card-title"></h2>
@@ -74,6 +102,6 @@
   </article>
 </div>
 
-<script src="app.js?v=19"></script>
+<script src="app.js?v=21"></script>
 </body>
 </html>

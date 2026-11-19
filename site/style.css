@@ -43,7 +43,7 @@ button:focus-visible { outline: 2.5px dashed var(--accent); outline-offset: 3px;
 #viewport.dragging { cursor: grabbing; }
 #stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 #stage.moving { will-change: transform; } /* cached while moving, redrawn sharp when still */
-#map { position: relative; z-index: 0; width: 100%; height: 100%; pointer-events: none; background: #F4EADA; }
+#map { position: relative; z-index: 0; overflow: hidden; width: 100%; height: 100%; pointer-events: none; background: #F4EADA; }
 #map img { position: absolute; display: block; -webkit-user-drag: none; }
 #map .map-base { left: 0; top: 0; width: 100%; height: 100%; }
 #map .tiles img { opacity: 0; transition: opacity .25s ease; }
@@ -228,7 +228,6 @@ button:focus-visible { outline: 2.5px dashed var(--accent); outline-offset: 3px;
   background: var(--card); border: 2px solid var(--ink); border-radius: 10px;
   padding: 18px 20px 16px; text-align: center;
   box-shadow: 5px 8px 0 var(--shadow); transform: rotate(-1deg);
-  user-select: text; -webkit-user-select: text;
   transition: background-color var(--night-ease), color var(--night-ease), border-color var(--night-ease);
 }
 #card-close {
@@ -381,3 +380,58 @@ body.night #card-backdrop { background: rgba(20, 12, 8, .55); }
 #loader p { margin: 0; font-size: 14px; color: var(--ink-soft); }
 /* stickers wait under the loader, then stick on when it lifts */
 .loading .marker .lift { animation-play-state: paused; }
+
+/* ---------- nothing selectable, draggable or long-press-able ---------- */
+img, svg { -webkit-user-drag: none; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+
+/* night trail pieces: switched on one by one while the route draws */
+#walk .pc { visibility: hidden; }
+#walk .pc.on { visibility: visible; }
+#walk .pc .walk-glow { stroke-linecap: butt; }
+
+/* ---------- settings panel ---------- */
+#settings-panel {
+  position: fixed; z-index: 15; right: 16px; top: calc(max(16px, env(safe-area-inset-top)) + 54px);
+  width: min(320px, calc(100vw - 32px)); max-height: calc(100dvh - 140px); overflow: auto;
+  background: var(--card); color: var(--ink); border: 2px solid var(--ink); border-radius: 10px;
+  box-shadow: 4px 6px 0 var(--shadow); padding: 12px 14px 10px; transform-origin: 90% 0;
+  animation: panel-in .28s var(--spring);
+}
+@keyframes panel-in { from { opacity: 0; transform: translateY(-6px) scale(.94) rotate(1deg); } }
+#settings-panel h3 { margin: 0 0 6px; font-size: 18px; }
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1.5px dashed var(--ink-soft); }
+.set-row > span { font-size: 15px; line-height: 1.25; }
+.set-row small { display: block; font-size: 12px; color: var(--ink-soft); }
+.switch {
+  flex: none; position: relative; width: 50px; height: 28px; border-radius: 99px; padding: 0;
+  border: 2px solid var(--ink); background: var(--paper); transition: background-color .25s;
+}
+.switch::after {
+  content: ""; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--ink); transition: transform .3s var(--spring);
+}
+.switch[aria-pressed="true"] { background: var(--accent); }
+.switch[aria-pressed="true"]::after { transform: translateX(22px); }
+.switch:disabled { opacity: .4; cursor: not-allowed; }
+.seg { flex: none; display: flex; border: 2px solid var(--ink); border-radius: 99px; overflow: hidden; }
+.seg button { border: 0; background: var(--card); padding: 4px 10px; font-size: 14px; transition: background-color .2s, color .2s; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--card); }
+.device { margin: 8px 0 0; font-size: 11.5px; line-height: 1.45; color: var(--ink-soft); }
+
+/* ---------- gyroscope consent ---------- */
+#consent { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px; background: rgba(40, 25, 15, .35); }
+#consent[hidden] { display: none; }
+.consent-card {
+  width: min(360px, 100%); background: var(--card); color: var(--ink); border: 2px solid var(--ink); border-radius: 10px;
+  box-shadow: 5px 8px 0 var(--shadow); padding: 16px 18px 14px; transform: rotate(-1deg); animation: panel-in .3s var(--spring);
+}
+.consent-card h3 { margin: 0 0 6px; font-size: 19px; }
+.consent-card p, .consent-card li { font-size: 14px; line-height: 1.5; }
+.consent-card ul { margin: 6px 0; padding-left: 18px; }
+.consent-msg { color: var(--red); min-height: 1em; margin: 4px 0; }
+.consent-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.chip.primary { background: var(--ink); color: var(--card); }
+#card-tilt { position: absolute; left: 12px; top: 12px; z-index: 2; height: 30px; padding: 0 10px; font-size: 13px; }
+
+/* ---------- "less motion" setting ---------- */
+.calm .marker .sticker, .calm .glow, .calm #walk-dot::before, .calm .loader-stickers img { animation: none !important; }
