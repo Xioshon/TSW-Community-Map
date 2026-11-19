@@ -1,10 +1,9 @@
 // 夜遊「圍」園 — map viewer: camera (drag, inertia, smooth zoom), stickers, trains, night mode, stamps, story cards.
 (async function () {
-  const [{ map, places, categories }, lines, walkData, svgText] = await Promise.all([
+  const [{ map, places, categories }, lines, walkData] = await Promise.all([
     fetch("data/places.json").then((r) => r.json()),
     fetch("data/lines.json").then((r) => r.json()).catch(() => ({ loop: [], stations: [] })),
     fetch("data/walk.json").then((r) => r.json()).catch(() => null),
-    fetch("img/map.svg").then((r) => r.text()),
   ]);
   const $ = (id) => document.getElementById(id);
   const viewport = $("viewport"), stage = $("stage"), markers = $("markers");
@@ -46,8 +45,7 @@
   }
 
   // ---------- base map ----------
-  $("map").innerHTML = svgText;
-  $("map").querySelector("svg").setAttribute("aria-hidden", "true");
+  $("map").append(Object.assign(new Image(map.width, map.height), { src: map.image, alt: "", decoding: "async", draggable: false }));
   stage.style.width = map.width + "px"; stage.style.height = map.height + "px";
   const project = (lat, lon) => [(lon - map.west) * map.kx * map.scale, (map.north - lat) * map.scale];
 
@@ -68,6 +66,7 @@
     const m = document.createElement("div");
     m.className = "marker" + (p.placeholder ? " placeholder" : "") + (visited.has(p.id) ? " visited" : "");
     m.style.left = x + "px"; m.style.top = y + "px";
+    m.style.zIndex = Math.round(y); // painter's order: the sticker further south sits in front
     m.style.setProperty("--delay", (.25 + i * .12).toFixed(2) + "s");
     m.style.setProperty("--sway", (-Math.random() * 3).toFixed(2) + "s");
     const btn = document.createElement("button");
@@ -300,6 +299,33 @@
     clampView(); render();
   });
   [z, tx, ty] = homeView(); clampView(); render();
+  // Shareable links: index.html#wetland (optionally #wetland@0.7 for a zoom level) opens centred on a place.
+  const goHash = () => {
+    const [pid, hz] = decodeURIComponent(location.hash.slice(1)).split("@");
+    const p = places.find((q) => q.id === pid);
+    if (!p) return;
+    const [vw, vh] = vwh(), [x, y] = project(p.lat, p.lon), nz = clampZ(+hz || 1.1);
+    tweenTo(nz, vw / 2 - x * nz, vh / 2 - (y - 60) * nz, 520);
+  };
+  addEventListener("hashchange", goHash);
+  goHash();
+
+  // Walk along a polyline by arc length (cheap, no SVG geometry calls per frame).
+  function polyline(pts) {
+    const cum = [0];
+    for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    const total = cum[cum.length - 1];
+    let hint = 1;
+    return {
+      total,
+      at(L) {
+        L = ((L % total) + total) % total;
+        if (cum[hint - 1] > L || cum[hint] < L) { let lo = 1, hi = cum.length - 1; while (lo < hi) { const mid = (lo + hi) >> 1; if (cum[mid] < L) lo = mid + 1; else hi = mid; } hint = lo; }
+        const i = hint, a = pts[i - 1], b = pts[i], t = (L - cum[i - 1]) / (cum[i] - cum[i - 1] || 1);
+        return { x: a[0] + (b[0] - a[0]) * t, y: a[1] + (b[1] - a[1]) * t, deg: (Math.atan2(b[1] - a[1], b[0] - a[0]) * 180) / Math.PI };
+      },
+    };
+  }
 
   // ---------- night walk (easter egg): the team's 2026-11-06 route, drawn when night falls ----------
   const walk = (() => {
@@ -312,10 +338,9 @@
     const tunnel = walkData.legs.filter((l) => l.tunnel).map((l) => dOf(l.pts)).join(" ");
     svg.innerHTML = `<defs><mask id="walk-reveal" maskUnits="userSpaceOnUse" x="0" y="0" width="${map.width}" height="${map.height}">
         <path class="walk-mask" d="${dOf(pts)}"/></mask></defs>
-      <g mask="url(#walk-reveal)"><path class="walk-glow" d="${road}"/><path class="walk-line" d="${road}"/><path class="walk-tunnel" d="${tunnel}"/></g>
-      <circle class="walker-halo" r="26"/><circle class="walker" r="7"/>`;
-    const mask = svg.querySelector(".walk-mask"), halo = svg.querySelector(".walker-halo"), dot = svg.querySelector(".walker");
-    const total = mask.getTotalLength();
+      <g mask="url(#walk-reveal)"><path class="walk-glow" d="${road}"/><path class="walk-line" d="${road}"/><path class="walk-tunnel" d="${tunnel}"/></g>`;
+    const mask = svg.querySelector(".walk-mask"), dot = $("walk-dot"), line = polyline(pts);
+    const total = line.total;
     mask.style.strokeDasharray = `${total} ${total}`;
     // memo-paper stops (HTML, so they keep a readable size at any zoom like the stickers)
     const stops = walkData.stops.map((s, i) => {
@@ -331,12 +356,12 @@
     });
     const egg = document.querySelector(".title-card .egg");
     if (egg) egg.textContent = `🏮 彩蛋：${walkData.date.slice(5).replace("-", ".")} 我哋嘅夜遊路線 · ${walkData.km} km`;
-    let on = false, raf = 0, t0 = 0, last = 0, pos = 0;
+    let on = false, raf = 0, t0 = 0, last = 0, pos = 0, frameNo = 0;
     const DRAW = 5200, STROLL = 55; // ms to draw the whole route; walker speed afterwards (map px/s)
     const ease = (t) => (t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
     function place(L) {
-      const p = mask.getPointAtLength(L);
-      for (const c of [halo, dot]) { c.setAttribute("cx", p.x.toFixed(1)); c.setAttribute("cy", p.y.toFixed(1)); }
+      const p = line.at(L);
+      dot.style.transform = `translate3d(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px, 0)`;
     }
     function reveal(L) {
       mask.style.strokeDashoffset = total - L;
@@ -345,7 +370,7 @@
     function frame(now) {
       if (!on) return;
       const k = Math.min(1, (now - t0) / DRAW);
-      if (k < 1) { pos = ease(k) * total; reveal(pos); }
+      if (k < 1) { pos = ease(k) * total; if ((frameNo++ & 1) === 0) reveal(pos); }
       else { if (!last) { reveal(total); last = now; } pos = (pos + STROLL * Math.min(.1, (now - last) / 1000)) % total; last = now; }
       place(pos);
       raf = requestAnimationFrame(frame);
@@ -353,7 +378,7 @@
     return {
       set(v) {
         on = v; cancelAnimationFrame(raf);
-        svg.classList.toggle("on", v);
+        svg.classList.toggle("on", v); dot.classList.toggle("on", v);
         if (!v) { stops.forEach((s) => s.el.classList.remove("show")); return; }
         if (reduceMotion) { reveal(total); place(0); return; }
         reveal(0); pos = 0; last = 0; t0 = performance.now();
@@ -381,41 +406,36 @@
   setSound(soundOn);
 
   // ---------- light rail: a 705 and a 706, two-car sets running the loop non-stop ----------
-  const NS = "http://www.w3.org/2000/svg", rails = $("rails");
-  rails.setAttribute("viewBox", `0 0 ${map.width} ${map.height}`);
-  function carSVG(lead) {
-    const g = document.createElementNS(NS, "g");
-    g.setAttribute("class", "car");
+  // Each car is its own tiny element moved with a CSS transform, so the map never repaints for it.
+  const rails = $("rails");
+  function car(lead) {
+    const el = document.createElement("div");
+    el.className = "car";
     const wins = [-9.6, -5.6, -1.6, 2.4, 6.4].map((x) =>
       `<rect class="car-win" x="${x}" y="-5.2" width="2.8" height="2" rx=".6"/><rect class="car-win" x="${x}" y="3.2" width="2.8" height="2" rx=".6"/>`).join("");
-    g.innerHTML = `<rect class="car-shadow" x="-13" y="-5.5" width="26" height="13" rx="4.5"/>
+    el.innerHTML = `<svg viewBox="-14 -8 28 16" width="28" height="16"><rect class="car-shadow" x="-13" y="-5.5" width="26" height="13" rx="4.5"/>
       <rect class="car-body" x="-13" y="-6.5" width="26" height="13" rx="4.5"/>
       <rect class="car-stripe" x="-11" y="-1.5" width="22" height="3" rx="1.5"/>${wins}` +
       (lead ? `<rect class="car-front" x="9.6" y="-4.6" width="2.6" height="9.2" rx="1.2"/>
         <circle class="car-light" cx="12.4" cy="-3.6" r="1"/><circle class="car-light" cx="12.4" cy="3.6" r="1"/>`
-        : `<path class="car-panto" d="M-4 0 L0 -3.4 L4 0 L0 3.4 Z"/>`);
-    rails.append(g);
-    return g;
+        : `<path class="car-panto" d="M-4 0 L0 -3.4 L4 0 L0 3.4 Z"/>`) + "</svg>";
+    rails.append(el);
+    return el;
   }
   const trains = [];
   if ((lines.loop || []).length > 1) {
-    const path = document.createElementNS(NS, "path");
-    path.setAttribute("d", "M" + lines.loop.map((p) => p.join(",")).join(" L"));
-    path.setAttribute("fill", "none");
-    rails.append(path);
-    const len = path.getTotalLength();
+    const loop = polyline(lines.loop);
     // Same speed, leaving 天水圍 together and running opposite ways round the loop.
-    [1, -1].forEach((dir) => trains.push({ path, len, dir, pos: dir > 0 ? .002 : .998, cars: [carSVG(true), carSVG(false)] }));
+    [1, -1].forEach((dir) => trains.push({ loop, len: loop.total, dir, pos: dir > 0 ? .002 : .998, cars: [car(true), car(false)] }));
   }
   const SPEED = 30; // map px per second
   let prev = performance.now();
   const wrap = (L, len) => ((L % len) + len) % len;
   function placeTrain(t) {
     const s = Math.min(1.25, Math.max(.8, 1 / Math.pow(z, .8)));
-    t.cars.forEach((g, i) => {
-      const L = wrap(t.pos * t.len - t.dir * i * 27.5 * s, t.len);
-      const a = t.path.getPointAtLength(L), b = t.path.getPointAtLength(wrap(L + t.dir * 2, t.len));
-      g.setAttribute("transform", `translate(${a.x.toFixed(1)},${a.y.toFixed(1)}) rotate(${((Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI).toFixed(1)}) scale(${s.toFixed(2)})`);
+    t.cars.forEach((el, i) => {
+      const p = t.loop.at(t.pos * t.len - t.dir * i * 27.5 * s);
+      el.style.transform = `translate3d(${(p.x - 14).toFixed(1)}px, ${(p.y - 8).toFixed(1)}px, 0) rotate(${(p.deg + (t.dir < 0 ? 180 : 0)).toFixed(1)}deg) scale(${s.toFixed(2)})`;
     });
   }
   function tick(now) {

@@ -43,7 +43,8 @@ button:focus-visible { outline: 2.5px dashed var(--accent); outline-offset: 3px;
 #viewport.dragging { cursor: grabbing; }
 #stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 #stage.moving { will-change: transform; } /* cached while moving, redrawn sharp when still */
-#map, #map svg { display: block; pointer-events: none; }
+#map, #map img { display: block; pointer-events: none; }
+#map img { width: 100%; height: auto; -webkit-user-drag: none; }
 #markers, #glows { position: absolute; inset: 0; }
 #rails { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 
@@ -57,15 +58,15 @@ button:focus-visible { outline: 2.5px dashed var(--accent); outline-offset: 3px;
 
 /* night wash: warm umber multiply, like sodium-lit estates in the team's photos */
 #dusk {
-  position: absolute; inset: 0; background: #3B2B22;
-  mix-blend-mode: multiply; opacity: 0;
+  position: absolute; inset: 0; background: #2A1C14; /* ≈ the old umber multiply over paper */
+  opacity: 0;
   transition: opacity var(--night-ease); pointer-events: none;
 }
-.night #dusk { opacity: .72; }
+.night #dusk { opacity: .68; }
 .glow {
   position: absolute; width: 150px; height: 150px; margin: -75px 0 0 -75px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 196, 110, .6), rgba(255, 170, 80, .2) 45%, transparent 70%);
-  mix-blend-mode: screen; opacity: 0; transform: scale(.4);
+  background: radial-gradient(circle, rgba(255, 200, 120, .42), rgba(255, 170, 80, .14) 45%, transparent 70%);
+  opacity: 0; transform: scale(.4);
   transition: opacity var(--night-ease), transform var(--night-ease); pointer-events: none;
 }
 .night .glow { opacity: 1; transform: scale(1); animation: flicker 4s ease-in-out infinite; animation-delay: var(--d, 0s); }
@@ -81,7 +82,7 @@ button:focus-visible { outline: 2.5px dashed var(--accent); outline-offset: 3px;
 .car-panto { fill: none; stroke: #3B2A20; stroke-width: .9; }
 .night .car-body { fill: #EADCC2; }
 .night .car-win, .night .car-front { fill: #FFC86B; }
-.night .car-light { fill: #FFF6D8; filter: drop-shadow(0 0 2px #FFD98A); }
+.night .car-light { fill: #FFF6D8; }
 
 /* ---------- stickers ---------- */
 .marker {
@@ -109,13 +110,12 @@ button:focus-visible { outline: 2.5px dashed var(--accent); outline-offset: 3px;
 .marker:not(.placeholder) button:active .lift { transform: translateY(-2px) scale(1.02); transition-duration: .1s; }
 .marker .sticker {
   width: 100%; height: 100%; object-fit: contain; pointer-events: none; display: block;
-  filter: drop-shadow(0 4px 4px rgba(59, 42, 32, .3));
   transform-origin: 50% 100%;
   animation: sway 3.4s ease-in-out infinite; animation-delay: var(--sway, 0s);
   transition: filter .3s;
 }
-.marker button:hover .sticker { filter: drop-shadow(0 12px 9px rgba(59, 42, 32, .3)); }
-.night .marker .sticker { filter: drop-shadow(0 0 10px rgba(255, 196, 110, .7)); }
+@media (hover: hover) { .marker button:hover .sticker { filter: drop-shadow(0 10px 7px rgba(59, 42, 32, .28)); } }
+
 .marker.peeled .sticker { visibility: hidden; }
 
 .marker .pin {
@@ -284,8 +284,6 @@ body.night #card-backdrop { background: rgba(20, 12, 8, .55); }
 .walk-glow { fill: none; stroke: rgba(255, 190, 95, .26); stroke-width: 22; stroke-linecap: round; stroke-linejoin: round; }
 .walk-line { fill: none; stroke: #FFC86B; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 12; }
 .walk-tunnel { fill: none; stroke: #FFC86B; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 10 9; opacity: .55; }
-.walker { fill: #FFF3D0; stroke: #E98B3A; stroke-width: 2; }
-.walker-halo { fill: rgba(255, 196, 110, .35); animation: lantern 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes lantern { 0%, 100% { opacity: .55; scale: .85; } 50% { opacity: 1; scale: 1.1; } }
 
 .walk-stop {
@@ -342,3 +340,15 @@ body.night #card-backdrop { background: rgba(20, 12, 8, .55); }
 #markers:not(.close) .walk-stop .memo { width: 24px; height: 24px; padding: 0; border-radius: 50%; display: grid; place-items: center; bottom: 8px; }
 #markers:not(.close) .walk-stop .memo i { display: none; }
 #markers:not(.close) .walk-stop .memo b { margin: 0; font-size: 13px; opacity: 1; }
+
+/* ---------- composited movers (trains, lantern): transforms only, never repaint the map ---------- */
+.car { position: absolute; left: 0; top: 0; width: 28px; height: 16px; transform-origin: 14px 8px; will-change: transform; }
+.car svg { display: block; overflow: visible; }
+#walk { will-change: transform; }
+#walk-dot {
+  position: absolute; left: -26px; top: -26px; width: 52px; height: 52px; pointer-events: none;
+  opacity: 0; transition: opacity .9s ease; will-change: transform;
+}
+#walk-dot.on { opacity: 1; }
+#walk-dot::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, rgba(255, 210, 130, .55), rgba(255, 196, 110, 0) 70%); animation: lantern 2.2s ease-in-out infinite; }
+#walk-dot::after { content: ""; position: absolute; left: 19px; top: 19px; width: 14px; height: 14px; border-radius: 50%; background: #FFF3D0; box-shadow: 0 0 0 2px #E98B3A; }
